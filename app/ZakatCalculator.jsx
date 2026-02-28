@@ -140,11 +140,12 @@ const DonutChart = ({ data }) => {
   );
 };
 
-// ─── Print via hidden iframe (no popup blocker issues) ────────────────────────
+// ─── Print / Save PDF — works on iOS Safari + Desktop ────────────────────────
 const triggerPrint = (data) => {
   const { rows, totalAssets, totalLiabilities, net, nisab, meetsNisab, zakatDue, gp, sp } = data;
   const today = new Date().toLocaleDateString("en-IN", { day:"numeric", month:"long", year:"numeric" });
   const html = `<!DOCTYPE html><html><head><title>Zakat Summary</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Outfit:wght@400;600&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}
@@ -166,7 +167,9 @@ const triggerPrint = (data) => {
   .zlabel{font-family:'Amiri',serif;color:#c8a96e;font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
   .zamt{font-size:32px;font-weight:700;color:${meetsNisab?"#1a6e2a":"#999"}}
   .zstatus{font-size:12px;color:${meetsNisab?"#2a8a3a":"#c05050"};margin-top:5px}
-  .foot{margin-top:18px;font-size:10px;color:#bbb;text-align:center;line-height:1.7}
+  .print-btn{display:block;margin:24px auto 0;padding:10px 28px;background:#1a6e2a;color:#fff;border:none;border-radius:8px;font-size:15px;font-family:'Outfit',sans-serif;cursor:pointer;font-weight:600}
+  .foot{margin-top:16px;font-size:10px;color:#bbb;text-align:center;line-height:1.7}
+  @media print{.print-btn{display:none}}
 </style></head><body>
 <div class="top"><span class="arabic">حاسبة الزكاة</span><h1>Zakat Calculation Summary</h1><p class="date">Prepared on ${today}</p></div>
 <div class="sec-label">Assets</div>
@@ -184,27 +187,41 @@ const triggerPrint = (data) => {
   <div class="zamt">${meetsNisab ? formatINR(zakatDue) : "Not Obligatory"}</div>
   <div class="zstatus">${meetsNisab ? "✓ Nisab threshold met" : "✗ Wealth is below Nisab threshold"}</div>
 </div>
-<p class="foot">Gold: ₹${gp}/gram · Silver: ₹${sp}/gram · Rates as of ${today}<br/>This is an estimate. Consult a qualified Islamic scholar for your specific situation.</p>
+<button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+<p class="foot">Gold: ₹${gp}/gram · Silver: ₹${sp}/gram · Rates as of ${today}<br/>Made with ❤️ by Danish · Consult a qualified Islamic scholar for your specific situation.</p>
 </body></html>`;
 
-  // Use hidden iframe — no popup blocker issues
-  const existing = document.getElementById("__zakat_print_frame");
-  if (existing) existing.remove();
-  const iframe = document.createElement("iframe");
-  iframe.id = "__zakat_print_frame";
-  iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:800px;height:600px;border:none;";
-  document.body.appendChild(iframe);
-  iframe.contentDocument.open();
-  iframe.contentDocument.write(html);
-  iframe.contentDocument.close();
-  iframe.contentWindow.onload = () => {
-    iframe.contentWindow.focus();
-    iframe.contentWindow.print();
-  };
-  // Fallback if onload already fired
-  setTimeout(() => {
-    try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch(e) {}
-  }, 800);
+  // iOS Safari: window.open() is the only reliable method
+  // Desktop: also works fine with window.open()
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+  if (isIOS) {
+    // iOS: open new tab — user taps the Print button inside, uses Share → Print
+    const win = window.open("", "_blank");
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+    } else {
+      // Popup blocked on iOS — fallback to data URI
+      const blob = new Blob([html], { type: "text/html" });
+      const url  = URL.createObjectURL(blob);
+      window.location.href = url;
+    }
+  } else {
+    // Desktop: hidden iframe triggers print dialog automatically
+    const existing = document.getElementById("__zakat_print_frame");
+    if (existing) existing.remove();
+    const iframe = document.createElement("iframe");
+    iframe.id = "__zakat_print_frame";
+    iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:800px;height:600px;border:none;visibility:hidden;";
+    document.body.appendChild(iframe);
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(html);
+    iframe.contentDocument.close();
+    const doPrint = () => { try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch(e) {} };
+    iframe.contentWindow.onload = doPrint;
+    setTimeout(doPrint, 600);
+  }
 };
 
 
@@ -409,7 +426,8 @@ export default function ZakatCalculator() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #0a0f0b; min-height: 100vh; font-family: 'Outfit', sans-serif; }
+        body { background: #0a0f0b; min-height: 100vh; font-family: 'Outfit', sans-serif; -webkit-text-size-adjust: 100%; }
+        input, select, textarea { font-size: 16px !important; } /* Prevent iOS auto-zoom */
 
         /* ── Page layout ── */
         .page {
@@ -534,7 +552,7 @@ export default function ZakatCalculator() {
         .irow-input { display: flex; align-items: center; background: #080d09; border: 1px solid #243826; border-radius: 7px; overflow: hidden; transition: border-color 0.15s; width: 160px; flex-shrink: 0; }
         .irow-input:focus-within { border-color: #c8a96e; background: #0a1009; }
         .irow-pre { padding: 0 0.5rem; color: #3a5a3c; font-size: 0.8rem; user-select: none; white-space: nowrap; }
-        .irow-input input { flex: 1; background: transparent; border: none; outline: none; color: #f0ece3; font-family: 'Outfit', sans-serif; font-size: 0.88rem; padding: 0.45rem 0.4rem 0.45rem 0; min-width: 0; }
+        .irow-input input { flex: 1; background: transparent; border: none; outline: none; color: #f0ece3; font-family: 'Outfit', sans-serif; font-size: 16px; padding: 0.45rem 0.4rem 0.45rem 0; min-width: 0; }
         .irow-input input::placeholder { color: #1e3020; }
 
         /* ── Progress bar ── */
