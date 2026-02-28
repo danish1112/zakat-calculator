@@ -83,18 +83,35 @@ const DonutChart = ({ data }) => {
       Enter asset values above to see your wealth breakdown
     </div>
   );
+  const R = 80, r = 48, cx = 100, cy = 100;
+  // Build slices — special-case a single slice as two circles (full ring)
   let cursor = -Math.PI / 2;
   const slices = data.map((d, i) => {
-    const angle = (d.value / total) * 2 * Math.PI;
-    const R = 80, r = 48, cx = 100, cy = 100;
-    const x1 = cx + R * Math.cos(cursor), y1 = cy + R * Math.sin(cursor);
-    cursor += angle;
-    const x2 = cx + R * Math.cos(cursor), y2 = cy + R * Math.sin(cursor);
-    const ix1 = cx + r * Math.cos(cursor - angle), iy1 = cy + r * Math.sin(cursor - angle);
-    const ix2 = cx + r * Math.cos(cursor), iy2 = cy + r * Math.sin(cursor);
-    const lg = angle > Math.PI ? 1 : 0;
-    return { ...d, color: COLORS[i % COLORS.length], pct: ((d.value / total) * 100).toFixed(1),
-      path: `M${x1} ${y1} A${R} ${R} 0 ${lg} 1 ${x2} ${y2} L${ix2} ${iy2} A${r} ${r} 0 ${lg} 0 ${ix1} ${iy1}Z` };
+    const rawAngle = (d.value / total) * 2 * Math.PI;
+    // Clamp to avoid degenerate paths; min visible wedge ~0.02 rad
+    const angle = Math.max(rawAngle, 0.02);
+    const isSingle = data.length === 1;
+    let path;
+    if (isSingle) {
+      // Full donut ring via two arcs
+      path = [
+        `M ${cx} ${cy - R}`,
+        `A ${R} ${R} 0 1 1 ${cx - 0.001} ${cy - R}`,
+        `L ${cx - 0.001} ${cy - r}`,
+        `A ${r} ${r} 0 1 0 ${cx} ${cy - r}`,
+        "Z"
+      ].join(" ");
+    } else {
+      const x1 = cx + R * Math.cos(cursor),  y1 = cy + R * Math.sin(cursor);
+      const x2 = cx + R * Math.cos(cursor + angle), y2 = cy + R * Math.sin(cursor + angle);
+      const ix1 = cx + r * Math.cos(cursor), iy1 = cy + r * Math.sin(cursor);
+      const ix2 = cx + r * Math.cos(cursor + angle), iy2 = cy + r * Math.sin(cursor + angle);
+      const lg = angle > Math.PI ? 1 : 0;
+      path = `M${x1} ${y1} A${R} ${R} 0 ${lg} 1 ${x2} ${y2} L${ix2} ${iy2} A${r} ${r} 0 ${lg} 0 ${ix1} ${iy1}Z`;
+    }
+    cursor += rawAngle;
+    return { ...d, color: COLORS[i % COLORS.length],
+      pct: ((d.value / total) * 100).toFixed(1), path };
   });
   const active = hov ? slices.find(s => s.label === hov) : null;
   return (
@@ -190,6 +207,89 @@ const triggerPrint = (data) => {
   }, 800);
 };
 
+
+// ─── Hijri Date & Zakat Reminder Modal ───────────────────────────────────────
+const HIJRI_MONTHS = ["Muharram","Safar","Rabi al-Awwal","Rabi al-Thani","Jumada al-Awwal","Jumada al-Thani","Rajab","Sha'ban","Ramadan","Shawwal","Dhu al-Qi'dah","Dhu al-Hijjah"];
+
+const getHijriDate = () => {
+  // Accurate Gregorian → Hijri conversion
+  const today = new Date();
+  const jd = Math.floor((today.getTime() / 86400000) + 2440587.5);
+  let l = jd - 1948440 + 10632;
+  const n = Math.floor((l - 1) / 10631);
+  l = l - 10631 * n + 354;
+  const j = Math.floor((10985 - l) / 5316) * Math.floor((50 * l) / 17719) +
+            Math.floor(l / 5670) * Math.floor((43 * l) / 15238);
+  l = l - Math.floor((30 - j) / 15) * Math.floor((17719 * j) / 50) -
+      Math.floor(j / 16) * Math.floor((15238 * j) / 43) + 29;
+  const month = Math.floor((24 * l) / 709);
+  const day   = l - Math.floor((709 * month) / 24);
+  const year  = 30 * n + j - 30;
+  return { day, month, year, monthName: HIJRI_MONTHS[month - 1] };
+};
+
+const HijriModal = ({ onClose, nisab, net, meetsNisab }) => {
+  const h = getHijriDate();
+  const today = new Date().toLocaleDateString("en-IN", { day:"numeric", month:"long", year:"numeric" });
+  return (
+    <div className="hijri-overlay" onClick={onClose}>
+      <div className="hijri-modal" onClick={e => e.stopPropagation()}>
+        <div className="hijri-modal-head">
+          <div>
+            <span className="hijri-moon">🌙</span>
+            <div className="hijri-modal-title">Hijri Date & Zakat Reminder</div>
+            <div className="hijri-modal-sub">Islamic calendar & Hawl guidance</div>
+          </div>
+          <button className="hijri-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="hijri-modal-body">
+          {/* Date display */}
+          <div className="hijri-date-block">
+            <div className="hijri-date-item">
+              <div className="hijri-date-label">Hijri Date</div>
+              <div className="hijri-date-value">{h.day} {h.monthName}</div>
+            </div>
+            <div className="hijri-date-divider" />
+            <div className="hijri-date-item">
+              <div className="hijri-date-label">Hijri Year</div>
+              <div className="hijri-date-value">{h.year} AH</div>
+            </div>
+            <div className="hijri-date-divider" />
+            <div className="hijri-date-item">
+              <div className="hijri-date-label">Gregorian</div>
+              <div className="hijri-date-value" style={{fontSize:"0.82rem"}}>{today}</div>
+            </div>
+          </div>
+
+          {/* Nisab status */}
+          <div className="hijri-reminder-title">Your Nisab Status</div>
+          <div className="hijri-nisab-note">
+            {meetsNisab
+              ? <><strong>✓ Your wealth meets Nisab.</strong> Zakat becomes obligatory once this wealth has been maintained for one full lunar year (Hawl — 354 days). If today marks that anniversary, your Zakat is due now.</>
+              : <>Your current net zakatable wealth is below the Nisab threshold. <strong>Zakat is not yet obligatory.</strong> Track when your wealth first reaches Nisab — your Hawl starts from that date.</>
+            }
+          </div>
+
+          {/* Hawl explanation */}
+          <div className="hijri-hawl-box">
+            <div className="hijri-hawl-label">What is Hawl?</div>
+            <div className="hijri-hawl-text">
+              Hawl is one complete lunar year (12 Islamic months = ~354 days). Your wealth must remain above Nisab for the entire Hawl. The Zakat is calculated and paid at the end of each Hawl on the anniversary date.
+            </div>
+            <div className="hijri-months">
+              {HIJRI_MONTHS.map((m, i) => (
+                <div key={i} className={`hijri-month-chip ${i + 1 === h.month ? "hmc-active" : ""}`}>
+                  {m.split(" ")[0]}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Input Row ────────────────────────────────────────────────────────────────
 const InputRow = ({ label, hint, field, prefix = "₹" }) => (
   <div className="irow">
@@ -251,6 +351,7 @@ const GuideTab = () => {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ZakatCalculator() {
   const [tab, setTab] = useState("calc"); // "calc" | "guide"
+  const [showHijri, setShowHijri] = useState(false);
 
   const cashSavings    = useIndianInput(0);
   const investments    = useIndianInput(0);
@@ -329,15 +430,75 @@ export default function ZakatCalculator() {
         .topbar-brand { flex: 1; }
         .topbar-arabic { font-family: 'Amiri', serif; font-size: 1.2rem; color: #c8a96e; display: block; line-height: 1; }
         .topbar-title { font-size: 1.25rem; font-weight: 600; color: #f0ece3; letter-spacing: -0.01em; }
-        .topbar-actions { display: flex; gap: 0.5rem; }
-        .tbn {
-          display: inline-flex; align-items: center; gap: 0.4rem;
-          padding: 0.4rem 0.9rem; border-radius: 8px; font-size: 0.78rem;
-          font-family: 'Outfit', sans-serif; font-weight: 500; cursor: pointer;
-          border: 1px solid; transition: all 0.2s;
+        .topbar-actions { display: flex; gap: 0.5rem; align-items: center; }
+
+        /* ── Hijri pill badge ── */
+        .hijri-pill {
+          display: inline-flex; align-items: center; gap: 0.5rem;
+          padding: 0.32rem 0.85rem 0.32rem 0.6rem;
+          background: #0d1a10;
+          border: 1px solid #c8a96e35;
+          border-radius: 100px;
+          cursor: pointer;
+          transition: all 0.25s;
+          position: relative;
+          overflow: hidden;
         }
-        .tbn-print { background: #1e1508; border-color: #5a3e12; color: #c8a96e; }
-        .tbn-print:hover { background: #2a1e0a; border-color: #c8a96e; }
+        .hijri-pill::before {
+          content: '';
+          position: absolute; inset: 0;
+          background: radial-gradient(ellipse 80% 100% at 0% 50%, #c8a96e0a, transparent 70%);
+          pointer-events: none;
+        }
+        .hijri-pill:hover {
+          background: #121e14;
+          border-color: #c8a96e70;
+          box-shadow: 0 0 12px #c8a96e18;
+        }
+        .hijri-pill-moon {
+          font-size: 0.95rem;
+          line-height: 1;
+          filter: drop-shadow(0 0 4px #c8a96e60);
+          animation: moonpulse 3s ease-in-out infinite;
+        }
+        @keyframes moonpulse {
+          0%, 100% { filter: drop-shadow(0 0 3px #c8a96e40); }
+          50%       { filter: drop-shadow(0 0 7px #c8a96e90); }
+        }
+        .hijri-pill-text { display: flex; flex-direction: column; gap: 0px; }
+        .hijri-pill-date {
+          font-size: 0.78rem; font-weight: 600; color: #c8a96e;
+          line-height: 1.2; letter-spacing: 0.01em; white-space: nowrap;
+        }
+        .hijri-pill-year {
+          font-size: 0.62rem; color: #4a6a4c;
+          line-height: 1; letter-spacing: 0.04em; white-space: nowrap;
+        }
+
+        /* ── Hijri Modal ── */
+        .hijri-overlay { position: fixed; inset: 0; background: #000b; backdrop-filter: blur(6px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+        .hijri-modal { background: #0d1610; border: 1px solid #1e3a2a; border-radius: 18px; width: 100%; max-width: 420px; overflow: hidden; box-shadow: 0 24px 60px #000a, 0 0 0 1px #c8a96e15; }
+        .hijri-modal-head { padding: 1.25rem 1.5rem 1rem; background: linear-gradient(135deg, #0f1e12, #0d1610); border-bottom: 1px solid #1a2e1c; display: flex; align-items: flex-start; justify-content: space-between; }
+        .hijri-moon { font-size: 2rem; line-height: 1; margin-bottom: 0.3rem; display: block; }
+        .hijri-modal-title { font-size: 1rem; font-weight: 600; color: #f0ece3; }
+        .hijri-modal-sub { font-size: 0.75rem; color: #4a6a4c; margin-top: 2px; }
+        .hijri-close { background: #1a2a1c; border: 1px solid #2a3d2c; color: #7a8a7d; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
+        .hijri-close:hover { background: #2a3d2c; color: #f0ece3; }
+        .hijri-modal-body { padding: 1.25rem 1.5rem 1.5rem; }
+        .hijri-date-block { background: #0a1209; border: 1px solid #1a3020; border-radius: 12px; padding: 1.1rem 1.25rem; margin-bottom: 1.1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+        .hijri-date-item { text-align: center; }
+        .hijri-date-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: #3a5a3c; margin-bottom: 0.3rem; }
+        .hijri-date-value { font-family: 'Amiri', serif; font-size: 1.05rem; color: #c8a96e; font-weight: 700; }
+        .hijri-date-divider { width: 1px; height: 36px; background: #1a3020; flex-shrink: 0; }
+        .hijri-reminder-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: #c8a96e; margin-bottom: 0.75rem; }
+        .hijri-nisab-note { background: #0a1a0c; border: 1px solid #1a3a1c; border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.82rem; color: #5a8a5c; line-height: 1.55; margin-bottom: 1rem; }
+        .hijri-nisab-note strong { color: #8fcc94; }
+        .hijri-hawl-box { background: #131a0e; border: 1px dashed #2a4a1c; border-radius: 8px; padding: 0.75rem 1rem; }
+        .hijri-hawl-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: #3a5a3c; margin-bottom: 0.4rem; }
+        .hijri-hawl-text { font-size: 0.82rem; color: #6a8a6c; line-height: 1.5; }
+        .hijri-months { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.3rem; margin-top: 1rem; }
+        .hijri-month-chip { background: #0a1209; border: 1px solid #1a2a1c; border-radius: 6px; padding: 0.28rem 0.35rem; text-align: center; font-size: 0.68rem; color: #3a5a3c; }
+        .hijri-month-chip.hmc-active { border-color: #c8a96e50; color: #c8a96e; background: #151a08; }
 
         /* ── Tabs ── */
         .tabs { display: flex; gap: 0; border-bottom: none; }
@@ -423,24 +584,28 @@ export default function ZakatCalculator() {
         /* ── Sticky bottom bar ── */
         .sticky-bar {
           position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-          background: #0d1610ee; backdrop-filter: blur(12px);
+          background: #0b1210f2; backdrop-filter: blur(14px);
           border-top: 1px solid #1e3020;
-          padding: 0.75rem 1.25rem;
-          display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-          transition: transform 0.3s;
+          padding: 0.7rem 1.25rem;
         }
-        .sticky-bar-inner { max-width: 900px; margin: 0 auto; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-        .sticky-label { font-size: 0.75rem; color: #4a6a4c; }
-        .sticky-amount { font-size: 1.4rem; font-weight: 600; color: #c8a96e; letter-spacing: -0.02em; line-height: 1; }
+        .sticky-bar-inner {
+          max-width: 900px; margin: 0 auto; width: 100%;
+          display: flex; align-items: center; gap: 0.75rem;
+        }
+        .sticky-left { display: flex; align-items: center; gap: 1.25rem; flex: 1; min-width: 0; }
+        .sticky-divider { width: 1px; height: 32px; background: #1e3020; flex-shrink: 0; }
+        .sticky-label { font-size: 0.68rem; color: #3a5a3c; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.1rem; }
+        .sticky-amount { font-size: 1.3rem; font-weight: 600; color: #c8a96e; letter-spacing: -0.02em; line-height: 1; }
         .sticky-amount.sticky-zero { color: #2a4a2c; }
-        .sticky-nisab { font-size: 0.7rem; }
+        .sticky-net { font-size: 0.88rem; font-weight: 500; color: #4a7a4c; font-variant-numeric: tabular-nums; line-height: 1; }
+        .sticky-btns { display: flex; gap: 0.5rem; flex-shrink: 0; }
         .sticky-print-btn {
-          background: #1e1508; border: 1px solid #5a3e12; color: #c8a96e;
-          padding: 0.45rem 1rem; border-radius: 8px; cursor: pointer;
-          font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 500;
-          transition: all 0.2s; white-space: nowrap;
+          background: #1a1006; border: 1px solid #4a3010; color: #c8a96e;
+          padding: 0.42rem 0.85rem; border-radius: 8px; cursor: pointer;
+          font-family: 'Outfit', sans-serif; font-size: 0.76rem; font-weight: 500;
+          transition: all 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 0.35rem;
         }
-        .sticky-print-btn:hover { background: #2a1e0a; border-color: #c8a96e; }
+        .sticky-print-btn:hover { background: #241508; border-color: #c8a96e; }
 
         /* ── Guide layout ── */
         .guide-wrap { display: flex; gap: 0; background: #0f1810; border: 1px solid #1a2e1c; border-radius: 14px; overflow: hidden; min-height: 540px; }
@@ -468,6 +633,9 @@ export default function ZakatCalculator() {
         .gc-page-num { font-size: 0.78rem; color: #3a5a3c; }
 
         .footer-note { color: #2a4a2c; font-size: 0.72rem; text-align: center; line-height: 1.7; padding: 1.5rem 0 0; }
+        .made-by { margin-top: 0.6rem; padding: 0.6rem 0 0; border-top: 1px solid #141e14; display: flex; align-items: center; justify-content: center; gap: 0.4rem; font-size: 0.72rem; color: #2a4a2c; }
+        .made-by-heart { color: #8a3a3a; font-size: 0.8rem; }
+        .made-by-name { color: #3a6a3c; font-weight: 500; letter-spacing: 0.02em; }
 
         /* ── Responsive ── */
         @media (max-width: 700px) {
@@ -475,14 +643,22 @@ export default function ZakatCalculator() {
           .right-col { position: static; }
           .topbar-title { font-size: 1rem; }
           .topbar-arabic { font-size: 1rem; }
+          .hijri-pill-year { display: none; }
+          .hijri-pill-date { font-size: 0.72rem; }
+          .hijri-pill { padding: 0.28rem 0.6rem 0.28rem 0.5rem; }
           .guide-wrap { flex-direction: column; }
           .guide-sidebar { width: 100%; border-right: none; border-bottom: 1px solid #1a2e1c; display: flex; overflow-x: auto; padding: 0.4rem; gap: 0.2rem; }
           .gsb-btn { flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 7px; flex-direction: column; align-items: center; padding: 0.4rem 0.6rem; min-width: 64px; }
           .gsb-active { border-bottom-color: #c8a96e !important; }
           .irow-input { width: 140px; }
-          .sticky-amount { font-size: 1.15rem; }
+          .sticky-amount { font-size: 1.05rem; }
+          .sticky-net { font-size: 0.8rem; }
+          .sticky-btns { gap: 0.35rem; }
+          .sticky-print-btn { font-size: 0.7rem; padding: 0.38rem 0.6rem; }
         }
       `}</style>
+
+      {showHijri && <HijriModal onClose={() => setShowHijri(false)} nisab={nisabThreshold} net={netZakatableWealth} meetsNisab={meetsNisab} />}
 
       {/* ── Sticky Topbar ── */}
       <div className="topbar">
@@ -493,9 +669,31 @@ export default function ZakatCalculator() {
               <span className="topbar-title">Zakat Calculator</span>
             </div>
             <div className="topbar-actions">
-              <button className="tbn tbn-print" onClick={() => triggerPrint({ rows: printRows, totalAssets, totalLiabilities, net: netZakatableWealth, nisab: nisabThreshold, meetsNisab, zakatDue, gp: goldPrice.numeric, sp: silverPrice.numeric })}>
-                🖨️ Print / Save PDF
-              </button>
+              {(() => {
+                const hd = (() => {
+                  const today = new Date();
+                  const jd = Math.floor((today.getTime() / 86400000) + 2440587.5);
+                  let l = jd - 1948440 + 10632;
+                  const n = Math.floor((l - 1) / 10631);
+                  l = l - 10631 * n + 354;
+                  const j = Math.floor((10985 - l) / 5316) * Math.floor((50 * l) / 17719) + Math.floor(l / 5670) * Math.floor((43 * l) / 15238);
+                  l = l - Math.floor((30 - j) / 15) * Math.floor((17719 * j) / 50) - Math.floor(j / 16) * Math.floor((15238 * j) / 43) + 29;
+                  const month = Math.floor((24 * l) / 709);
+                  const day   = l - Math.floor((709 * month) / 24);
+                  const year  = 30 * n + j - 30;
+                  const names = ["Muharram","Safar","Rabi al-Awwal","Rabi al-Thani","Jumada al-Awwal","Jumada al-Thani","Rajab","Sha'ban","Ramadan","Shawwal","Dhu al-Qi'dah","Dhu al-Hijjah"];
+                  return { day, monthName: names[month - 1], year };
+                })();
+                return (
+                  <button className="hijri-pill" onClick={() => setShowHijri(true)} title="Hijri Date & Zakat Reminder">
+                    <span className="hijri-pill-moon">🌙</span>
+                    <span className="hijri-pill-text">
+                      <span className="hijri-pill-date">{hd.day} {hd.monthName}</span>
+                      <span className="hijri-pill-year">{hd.year} AH · tap for Hawl guide</span>
+                    </span>
+                  </button>
+                );
+              })()}
             </div>
           </div>
           <div className="tabs">
@@ -602,6 +800,9 @@ export default function ZakatCalculator() {
               <p className="footer-note">
                 All amounts in Indian Rupees (INR) · Gold & silver rates as of 28 Feb 2026<br />
                 This is an estimate only — consult a qualified Islamic scholar for your situation
+                <span className="made-by">
+                  Made with <span className="made-by-heart">❤️</span> by <span className="made-by-name">Danish</span>
+                </span>
               </p>
             </>
           )}
@@ -615,19 +816,27 @@ export default function ZakatCalculator() {
       {/* ── Sticky Bottom Bar ── */}
       <div className="sticky-bar">
         <div className="sticky-bar-inner">
-          <div>
-            <div className="sticky-label">Zakat Due</div>
-            <div className={`sticky-amount ${zakatDue === 0 ? "sticky-zero" : ""}`}>
-              {zakatDue === 0 ? (netZakatableWealth > 0 ? "Below Nisab" : "—") : formatINR(zakatDue)}
+          <div className="sticky-left">
+            {/* Zakat Due */}
+            <div>
+              <div className="sticky-label">Zakat Due</div>
+              <div className={`sticky-amount ${zakatDue === 0 ? "sticky-zero" : ""}`}>
+                {zakatDue === 0 ? (netZakatableWealth > 0 ? "Below Nisab" : "—") : formatINR(zakatDue)}
+              </div>
+            </div>
+            <div className="sticky-divider" />
+            {/* Net Zakatable Wealth */}
+            <div>
+              <div className="sticky-label">Net Zakatable Wealth</div>
+              <div className="sticky-net">{formatINR(netZakatableWealth)}</div>
             </div>
           </div>
-          <div style={{ textAlign: "right" }}>
-            <div className="sticky-label">Net Zakatable Wealth</div>
-            <div style={{ fontSize: "0.88rem", color: "#6a8a6c", fontVariantNumeric: "tabular-nums" }}>{formatINR(netZakatableWealth)}</div>
+          {/* Action buttons */}
+          <div className="sticky-btns">
+            <button className="sticky-print-btn" onClick={() => triggerPrint({ rows: printRows, totalAssets, totalLiabilities, net: netZakatableWealth, nisab: nisabThreshold, meetsNisab, zakatDue, gp: goldPrice.numeric, sp: silverPrice.numeric })}>
+              🖨️ Print / Save PDF
+            </button>
           </div>
-          <button className="sticky-print-btn" onClick={() => triggerPrint({ rows: printRows, totalAssets, totalLiabilities, net: netZakatableWealth, nisab: nisabThreshold, meetsNisab, zakatDue, gp: goldPrice.numeric, sp: silverPrice.numeric })}>
-            🖨️ Print / Save PDF
-          </button>
         </div>
       </div>
     </>
