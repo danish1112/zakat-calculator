@@ -387,63 +387,94 @@ const DonutChart = ({ data, emptyText }) => {
 };
 
 // ─── Print ────────────────────────────────────────────────────────────────────
-const triggerPrint = (data) => {
+const buildPrintHTML = (data) => {
   const { rows, totalAssets, totalLiabilities, net, nisab, meetsNisab, zakatDue, gp, sp } = data;
   const today = new Date().toLocaleDateString("en-IN", { day:"numeric", month:"long", year:"numeric" });
-  const html = `<!DOCTYPE html><html><head><title>Zakat Summary</title>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
+  const assetRows  = rows.filter(r => r.s === "a").map(r => `<tr><td>${r.l}</td><td>${formatINR(r.v)}</td></tr>`).join("");
+  const liabRows   = rows.filter(r => r.s === "l").map(r => `<tr><td>${r.l}</td><td>${formatINR(r.v)}</td></tr>`).join("");
+  const zColor     = meetsNisab ? "#1a6e2a" : "#999";
+  const zBorder    = meetsNisab ? "#5cb86a" : "#e07c7c";
+  const zBg        = meetsNisab ? "#f0faf2" : "#fdf5f5";
+  const zStatusClr = meetsNisab ? "#2a8a3a" : "#c05050";
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"/>
+<title>Zakat Summary ${today}</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Outfit:wght@400;600&display=swap');
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Outfit',sans-serif;color:#1a1a1a;padding:36px 44px;max-width:640px;margin:0 auto}
-  .top{text-align:center;border-bottom:2px solid #c8a96e;padding-bottom:18px;margin-bottom:24px}
-  .arabic{font-family:'Amiri',serif;font-size:26px;color:#c8a96e;display:block;margin-bottom:2px}
-  h1{font-size:22px;font-weight:600}.date{color:#999;font-size:12px;margin-top:3px}
-  .sec-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#c8a96e;font-weight:600;margin:18px 0 6px;border-bottom:1px solid #ede0c8;padding-bottom:3px}
-  table{width:100%;border-collapse:collapse}tr{border-bottom:1px solid #f5efe4}td{padding:6px 2px;font-size:13px}td:last-child{text-align:right;color:#7a5a20;font-weight:500}
-  .sbox{background:#faf7f0;border:1px solid #e8ddc0;border-radius:8px;padding:14px 16px;margin-top:20px}
-  .sr{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#666;border-bottom:1px solid #ede8d8}.sr:last-child{border-bottom:none}.sr.bold{color:#1a1a1a;font-weight:600;font-size:14px}
-  .zbox{margin-top:20px;border:2px solid ${meetsNisab?"#5cb86a":"#e07c7c"};border-radius:10px;padding:18px;text-align:center;background:${meetsNisab?"#f0faf2":"#fdf5f5"}}
-  .zlabel{font-family:'Amiri',serif;color:#c8a96e;font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
-  .zamt{font-size:32px;font-weight:700;color:${meetsNisab?"#1a6e2a":"#999"}}
-  .zstatus{font-size:12px;color:${meetsNisab?"#2a8a3a":"#c05050"};margin-top:5px}
-  .print-btn{display:block;margin:24px auto 0;padding:10px 28px;background:#1a6e2a;color:#fff;border:none;border-radius:8px;font-size:15px;font-family:'Outfit',sans-serif;cursor:pointer;font-weight:600}
-  .foot{margin-top:16px;font-size:10px;color:#bbb;text-align:center;line-height:1.7}
-  @media print{.print-btn{display:none}}
-</style></head><body>
-<div class="top"><span class="arabic">حاسبة الزكاة</span><h1>Zakat Calculation Summary</h1><p class="date">Prepared on ${today}</p></div>
-<div class="sec-label">Assets</div><table>${rows.filter(r=>r.s==="a").map(r=>`<tr><td>${r.l}</td><td>${formatINR(r.v)}</td></tr>`).join("")}</table>
-<div class="sec-label">Liabilities</div><table>${rows.filter(r=>r.s==="l").map(r=>`<tr><td>${r.l}</td><td>${formatINR(r.v)}</td></tr>`).join("")}</table>
+@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Outfit:wght@300;400;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Outfit',sans-serif;color:#1a1a1a;background:#fff;padding:40px 48px;max-width:660px;margin:0 auto}
+.logo{text-align:center;margin-bottom:24px;padding-bottom:20px;border-bottom:2px solid #c8a96e}
+.arabic{font-family:'Amiri',serif;font-size:28px;color:#c8a96e;display:block;margin-bottom:4px}
+h1{font-size:22px;font-weight:600;color:#1a1a1a}
+.date{color:#aaa;font-size:12px;margin-top:4px}
+.sec{font-size:9.5px;text-transform:uppercase;letter-spacing:.12em;color:#c8a96e;font-weight:700;margin:22px 0 7px;border-bottom:1px solid #ede0c8;padding-bottom:4px}
+table{width:100%;border-collapse:collapse}
+tr{border-bottom:1px solid #f2ece0}
+td{padding:7px 3px;font-size:13px}
+td:last-child{text-align:right;color:#7a5a20;font-weight:500}
+.sbox{background:#faf7f0;border:1px solid #e8ddc0;border-radius:10px;padding:16px 18px;margin-top:22px}
+.sr{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#666;border-bottom:1px solid #ede8d8}
+.sr:last-child{border-bottom:none}
+.sr.bold{color:#1a1a1a;font-weight:700;font-size:14px;padding-top:9px;margin-top:2px}
+.zbox{margin-top:22px;border:2px solid ${zBorder};border-radius:12px;padding:20px;text-align:center;background:${zBg}}
+.zlabel{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#c8a96e;margin-bottom:6px;font-weight:600}
+.zamt{font-size:34px;font-weight:700;color:${zColor};font-family:'Outfit',sans-serif}
+.zstatus{font-size:12px;color:${zStatusClr};margin-top:6px}
+.actions{display:flex;gap:10px;margin-top:26px;justify-content:center}
+.btn{padding:10px 26px;border:none;border-radius:8px;font-size:14px;font-family:'Outfit',sans-serif;font-weight:600;cursor:pointer}
+.btn-print{background:#1a6e2a;color:#fff}
+.btn-close{background:#f0ece3;color:#555}
+.foot{margin-top:20px;font-size:10px;color:#ccc;text-align:center;line-height:1.8}
+@media print{.actions{display:none!important}.foot{color:#aaa}}
+</style></head>
+<body>
+<div class="logo">
+  <span class="arabic">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْم</span>
+  <h1>Zakat Calculation Summary</h1>
+  <p class="date">Prepared on ${today}</p>
+</div>
+
+${assetRows ? `<div class="sec">Assets</div><table>${assetRows}</table>` : ""}
+${liabRows  ? `<div class="sec">Liabilities</div><table>${liabRows}</table>` : ""}
+
 <div class="sbox">
   <div class="sr"><span>Total Assets</span><span>${formatINR(totalAssets)}</span></div>
   <div class="sr"><span>Total Liabilities</span><span>− ${formatINR(totalLiabilities)}</span></div>
   <div class="sr bold"><span>Net Zakatable Wealth</span><span>${formatINR(net)}</span></div>
-  <div class="sr"><span>Nisab (Silver 595g × ₹${sp}/g)</span><span>${formatINR(nisab)}</span></div>
+  <div class="sr" style="padding-top:8px;color:#999;font-size:12px"><span>Nisab threshold (Silver 595g @ ₹${sp}/g)</span><span>${formatINR(nisab)}</span></div>
 </div>
+
 <div class="zbox">
-  <div class="zlabel">Zakat Due (2.5%)</div>
+  <div class="zlabel">Zakat Due @ 2.5%</div>
   <div class="zamt">${meetsNisab ? formatINR(zakatDue) : "Not Obligatory"}</div>
-  <div class="zstatus">${meetsNisab ? "✓ Nisab threshold met" : "✗ Wealth is below Nisab threshold"}</div>
+  <div class="zstatus">${meetsNisab ? "✓ Nisab threshold met — Zakat is obligatory" : "✗ Wealth is below the Nisab threshold"}</div>
 </div>
-<button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
-<p class="foot">Gold: ₹${gp}/gram · Silver: ₹${sp}/gram · Rates as of ${today}<br/>Made with ❤️ by Danish · Consult a qualified Islamic scholar for your specific situation.</p>
+
+<div class="actions">
+  <button class="btn btn-print" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  <button class="btn btn-close" onclick="window.close()">✕ Close</button>
+</div>
+<p class="foot">
+  Gold: ₹${gp}/gram &nbsp;·&nbsp; Silver: ₹${sp}/gram &nbsp;·&nbsp; Rates as of ${today}<br/>
+  Made with ❤️ by Danish &nbsp;·&nbsp; Consult a qualified Islamic scholar for your specific situation.
+</p>
 </body></html>`;
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  if (isIOS) {
-    const win = window.open("", "_blank");
-    if (win) { win.document.write(html); win.document.close(); }
-  } else {
-    const existing = document.getElementById("__zakat_print_frame");
-    if (existing) existing.remove();
-    const iframe = document.createElement("iframe");
-    iframe.id = "__zakat_print_frame";
-    iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:800px;height:600px;border:none;visibility:hidden;";
-    document.body.appendChild(iframe);
-    iframe.contentDocument.open(); iframe.contentDocument.write(html); iframe.contentDocument.close();
-    const doPrint = () => { try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch(e) {} };
-    iframe.contentWindow.onload = doPrint;
-    setTimeout(doPrint, 600);
-  }
+};
+
+const triggerPrint = (data) => {
+  const html = buildPrintHTML(data);
+  // Blob URL approach — works in sandboxed iframes, no popup blocker issues
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.target   = "_blank";
+  a.rel      = "noopener noreferrer";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 };
 
 // ─── Brand SVG Icons ──────────────────────────────────────────────────────────
@@ -956,7 +987,7 @@ export default function ZakatCalculator() {
   const allFields = [cashSavings, investments, businessAssets, receivables, otherAssets, goldGrams, silverGrams, goldPrice, silverPrice, debts, expenses];
 
   const handleReset = () => {
-    // if (!window.confirm(t.resetConfirm)) return;
+   // if (!window.confirm(t.resetConfirm)) return;
     // Directly call setDisplay on each field — no stale closure issues
     cashSavings.setDisplay("");
     investments.setDisplay("");
