@@ -406,84 +406,96 @@ const generatePDF = async (data) => {
   const today = new Date().toLocaleDateString("en-IN", { day:"numeric", month:"long", year:"numeric" });
   let y = 20;
 
-  const gold = [200, 169, 110], darkGold = [122, 90, 32];
-  const green = [26, 110, 42], darkGrey = [26, 26, 26], grey = [100, 100, 100], lightGrey = [200, 200, 200];
+  // jsPDF built-in fonts only support Latin — sanitise all text
+  const safe = (s) => String(s)
+    .replace(/\u20B9/g, "Rs.")   // ₹ rupee sign
+    .replace(/\u2212/g, "-")     // unicode minus
+    .replace(/\u00D7/g, "x")     // × multiply
+    .replace(/\u00B7/g, "|")     // · middle dot
+    .replace(/[^\x20-\x7E]/g, ""); // strip remaining non-ASCII
 
-  // ── Header ──
-  doc.setFontSize(18); doc.setFont("helvetica","bold"); doc.setTextColor(...darkGrey);
+  const fmtPDF = (v) => safe(formatINR(v));
+
+  const GOLD  = [200, 169, 110];
+  const DGOLD = [122, 90, 32];
+  const GREEN = [26, 110, 42];
+  const DARK  = [26, 26, 26];
+  const GREY  = [100, 100, 100];
+  const LGREY = [200, 200, 200];
+
+  const setClr  = (c) => doc.setTextColor(c[0], c[1], c[2]);
+  const setDraw = (c) => doc.setDrawColor(c[0], c[1], c[2]);
+  const setFill = (c) => doc.setFillColor(c[0], c[1], c[2]);
+
+  // Header
+  doc.setFontSize(18); doc.setFont("helvetica","bold"); setClr(DARK);
   doc.text("Zakat Calculation Summary", W/2, y, { align:"center" }); y += 7;
-  doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(...grey);
-  doc.text(`Prepared on ${today}`, W/2, y, { align:"center" }); y += 4;
-  doc.setDrawColor(...gold); doc.setLineWidth(0.6);
-  doc.line(margin, y, W-margin, y); y += 8;
+  doc.setFontSize(9); doc.setFont("helvetica","normal"); setClr(GREY);
+  doc.text("Prepared on " + today, W/2, y, { align:"center" }); y += 4;
+  setDraw(GOLD); doc.setLineWidth(0.6);
+  doc.line(margin, y, W - margin, y); y += 8;
 
-  const sectionLabel = (label) => {
-    doc.setFontSize(7.5); doc.setFont("helvetica","bold"); doc.setTextColor(...gold);
-    doc.text(label.toUpperCase(), margin, y); y += 1.5;
-    doc.setDrawColor(...gold[0], ...gold.slice(1)); doc.setLineWidth(0.2);
-    doc.line(margin, y, W-margin, y); y += 5;
+  const secLabel = (lbl) => {
+    doc.setFontSize(7.5); doc.setFont("helvetica","bold"); setClr(GOLD);
+    doc.text(lbl.toUpperCase(), margin, y); y += 1.5;
+    setDraw(GOLD); doc.setLineWidth(0.2);
+    doc.line(margin, y, W - margin, y); y += 5;
   };
 
-  const tableRow = (label, value, bold=false, labelColor=darkGrey, valueColor=darkGold) => {
+  const row = (lbl, val, bold, lClr, vClr) => {
+    if (!lClr) lClr = DARK;
+    if (!vClr) vClr = DGOLD;
     if (y > 265) { doc.addPage(); y = 20; }
-    doc.setFontSize(10.5);
-    doc.setFont("helvetica", bold ? "bold" : "normal");
-    doc.setTextColor(...labelColor); doc.text(label, margin, y);
-    doc.setTextColor(...valueColor); doc.text(value, W-margin, y, { align:"right" });
-    doc.setDrawColor(...lightGrey); doc.setLineWidth(0.15);
-    doc.line(margin, y+1.5, W-margin, y+1.5);
+    doc.setFontSize(10.5); doc.setFont("helvetica", bold ? "bold" : "normal");
+    setClr(lClr); doc.text(safe(lbl), margin, y);
+    setClr(vClr); doc.text(safe(val), W - margin, y, { align:"right" });
+    setDraw(LGREY); doc.setLineWidth(0.15);
+    doc.line(margin, y + 1.5, W - margin, y + 1.5);
     y += 7;
   };
 
-  // ── Assets ──
-  const assetRows = rows.filter(r => r.s === "a");
-  if (assetRows.length) {
-    sectionLabel("Assets");
-    assetRows.forEach(r => tableRow(r.l, formatINR(r.v)));
-    y += 2;
-  }
+  // Assets
+  const aRows = rows.filter(r => r.s === "a");
+  if (aRows.length) { secLabel("Assets"); aRows.forEach(r => row(r.l, fmtPDF(r.v))); y += 2; }
 
-  // ── Liabilities ──
-  const liabRows = rows.filter(r => r.s === "l");
-  if (liabRows.length) {
-    sectionLabel("Liabilities");
-    liabRows.forEach(r => tableRow(r.l, formatINR(r.v)));
-    y += 2;
-  }
+  // Liabilities
+  const lRows = rows.filter(r => r.s === "l");
+  if (lRows.length) { secLabel("Liabilities"); lRows.forEach(r => row(r.l, fmtPDF(r.v))); y += 2; }
 
-  // ── Summary box ──
-  sectionLabel("Summary");
-  tableRow("Total Assets",         formatINR(totalAssets));
-  tableRow("Total Liabilities",    "− " + formatINR(totalLiabilities));
-  tableRow("Net Zakatable Wealth", formatINR(net), true, darkGrey, green);
-  doc.setFontSize(8.5); doc.setFont("helvetica","normal"); doc.setTextColor(...lightGrey);
-  doc.text(`Nisab threshold: Silver 595g × ₹${sp}/g = ${formatINR(nisab)}`, margin, y); y += 10;
+  // Summary
+  secLabel("Summary");
+  row("Total Assets",         fmtPDF(totalAssets));
+  row("Total Liabilities",    "- " + fmtPDF(totalLiabilities));
+  row("Net Zakatable Wealth", fmtPDF(net), true, DARK, GREEN);
+  doc.setFontSize(8.5); doc.setFont("helvetica","normal"); setClr(LGREY);
+  doc.text("Nisab: Silver 595g x Rs." + sp + "/g = " + fmtPDF(nisab), margin, y); y += 10;
 
-  // ── Zakat due box ──
+  // Zakat box
   const boxH = 28;
   if (y + boxH > 270) { doc.addPage(); y = 20; }
-  const boxColor = meetsNisab ? [240,250,242] : [253,245,245];
-  const borderClr = meetsNisab ? [92,184,106] : [224,124,124];
-  doc.setFillColor(...boxColor); doc.setDrawColor(...borderClr); doc.setLineWidth(0.5);
+  const boxFill   = meetsNisab ? [240,250,242] : [253,245,245];
+  const boxBorder = meetsNisab ? [92,184,106]  : [224,124,124];
+  const amtClr    = meetsNisab ? GREEN         : [150,150,150];
+  const stClr     = meetsNisab ? [42,138,58]   : [192,80,80];
+  setFill(boxFill); setDraw(boxBorder); doc.setLineWidth(0.5);
   doc.roundedRect(margin, y, contentW, boxH, 3, 3, "FD");
-  doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...gold);
-  doc.text("ZAKAT DUE @ 2.5%", W/2, y+6, { align:"center" });
-  doc.setFontSize(18); doc.setFont("helvetica","bold");
-  doc.setTextColor(...(meetsNisab ? green : [150,150,150]));
-  doc.text(meetsNisab ? formatINR(zakatDue) : "Not Obligatory", W/2, y+16, { align:"center" });
-  doc.setFontSize(8); doc.setFont("helvetica","normal");
-  doc.setTextColor(...(meetsNisab ? [42,138,58] : [192,80,80]));
-  doc.text(meetsNisab ? "✓ Nisab threshold met" : "✗ Wealth is below Nisab threshold", W/2, y+23, { align:"center" });
+  doc.setFontSize(7); doc.setFont("helvetica","bold"); setClr(GOLD);
+  doc.text("ZAKAT DUE @ 2.5%", W/2, y + 6, { align:"center" });
+  doc.setFontSize(18); doc.setFont("helvetica","bold"); setClr(amtClr);
+  doc.text(meetsNisab ? fmtPDF(zakatDue) : "Not Obligatory", W/2, y + 16, { align:"center" });
+  doc.setFontSize(8); doc.setFont("helvetica","normal"); setClr(stClr);
+  doc.text(
+    meetsNisab ? "Nisab threshold met - Zakat is obligatory" : "Wealth is below Nisab threshold",
+    W/2, y + 23, { align:"center" }
+  );
   y += boxH + 10;
 
-  // ── Footer ──
-  doc.setFontSize(7.5); doc.setFont("helvetica","normal"); doc.setTextColor(...lightGrey);
-  doc.text(`Gold: ₹${gp}/g  ·  Silver: ₹${sp}/g  ·  ${today}`, W/2, y, { align:"center" }); y+=4;
-  doc.text("Made with ❤ by Danish  ·  Consult a qualified Islamic scholar for your situation.", W/2, y, { align:"center" });
+  // Footer
+  doc.setFontSize(7.5); doc.setFont("helvetica","normal"); setClr(LGREY);
+  doc.text("Gold: Rs." + gp + "/g  |  Silver: Rs." + sp + "/g  |  " + today, W/2, y, { align:"center" }); y += 4;
+  doc.text("Made by Danish  |  Consult a qualified Islamic scholar for your situation.", W/2, y, { align:"center" });
 
-  // ── Save ──
-  const filename = `Zakat-Summary-${new Date().getFullYear()}.pdf`;
-  doc.save(filename);
+  doc.save("Zakat-Summary-" + new Date().getFullYear() + ".pdf");
 };
 
 const PrintOverlay = ({ data, onClose }) => {
