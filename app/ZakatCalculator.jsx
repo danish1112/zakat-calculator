@@ -387,148 +387,119 @@ const DonutChart = ({ data, emptyText }) => {
 };
 
 // ─── Print ────────────────────────────────────────────────────────────────────
-// ─── Print / PDF ─────────────────────────────────────────────────────────────
-// Works on all platforms including iOS Safari and Android Chrome.
-// Strategy: inject a full-page overlay into the CURRENT document, then call
-// window.print(). CSS @media print hides everything except the overlay.
-// On mobile "Print → Save as PDF" in the browser share sheet saves the PDF.
-const triggerPrint = (data) => {
+// ─── Print Overlay Component ─────────────────────────────────────────────────
+const PrintOverlay = ({ data, onClose }) => {
   const { rows, totalAssets, totalLiabilities, net, nisab, meetsNisab, zakatDue, gp, sp } = data;
   const today = new Date().toLocaleDateString("en-IN", { day:"numeric", month:"long", year:"numeric" });
-  const assetRows = rows.filter(r => r.s === "a").map(r =>
-    `<tr><td>${r.l}</td><td>${formatINR(r.v)}</td></tr>`).join("");
-  const liabRows  = rows.filter(r => r.s === "l").map(r =>
-    `<tr><td>${r.l}</td><td>${formatINR(r.v)}</td></tr>`).join("");
+  const assetRows = rows.filter(r => r.s === "a");
+  const liabRows  = rows.filter(r => r.s === "l");
   const zColor     = meetsNisab ? "#1a6e2a" : "#888";
   const zBorder    = meetsNisab ? "#5cb86a" : "#e07c7c";
   const zBg        = meetsNisab ? "#f0faf2" : "#fdf5f5";
   const zStatusClr = meetsNisab ? "#2a8a3a" : "#c05050";
 
-  // Remove any existing overlay
-  const prev = document.getElementById("__zakat_print_overlay");
-  if (prev) prev.remove();
+  const doPrint = () => window.print();
 
-  const overlay = document.createElement("div");
-  overlay.id = "__zakat_print_overlay";
-  overlay.innerHTML = `
-    <style>
-      #__zakat_print_overlay {
-        position: fixed; inset: 0; z-index: 99999;
-        background: #fff; overflow-y: auto;
-        font-family: 'Outfit', 'Segoe UI', sans-serif;
-        color: #1a1a1a;
-        -webkit-overflow-scrolling: touch;
-      }
-      #__zakat_print_overlay .p-inner {
-        max-width: 600px; margin: 0 auto; padding: 32px 28px 48px;
-      }
-      #__zakat_print_overlay .p-logo {
-        text-align: center; border-bottom: 2px solid #c8a96e;
-        padding-bottom: 18px; margin-bottom: 22px;
-      }
-      #__zakat_print_overlay .p-arabic {
-        font-family: 'Amiri', 'Arial', serif; font-size: 24px;
-        color: #c8a96e; display: block; margin-bottom: 4px;
-      }
-      #__zakat_print_overlay h1 { font-size: 20px; font-weight: 600; }
-      #__zakat_print_overlay .p-date { color: #aaa; font-size: 12px; margin-top: 3px; }
-      #__zakat_print_overlay .p-sec {
-        font-size: 9px; text-transform: uppercase; letter-spacing: .12em;
-        color: #c8a96e; font-weight: 700; margin: 20px 0 6px;
-        border-bottom: 1px solid #ede0c8; padding-bottom: 3px;
-      }
-      #__zakat_print_overlay table { width: 100%; border-collapse: collapse; }
-      #__zakat_print_overlay tr { border-bottom: 1px solid #f2ece0; }
-      #__zakat_print_overlay td { padding: 7px 3px; font-size: 13px; }
-      #__zakat_print_overlay td:last-child { text-align: right; color: #7a5a20; font-weight: 500; }
-      #__zakat_print_overlay .p-sbox {
-        background: #faf7f0; border: 1px solid #e8ddc0;
-        border-radius: 10px; padding: 14px 16px; margin-top: 20px;
-      }
-      #__zakat_print_overlay .p-sr {
-        display: flex; justify-content: space-between;
-        padding: 5px 0; font-size: 13px; color: #666;
-        border-bottom: 1px solid #ede8d8;
-      }
-      #__zakat_print_overlay .p-sr:last-child { border-bottom: none; }
-      #__zakat_print_overlay .p-sr.bold {
-        color: #1a1a1a; font-weight: 700; font-size: 14px; padding-top: 8px;
-      }
-      #__zakat_print_overlay .p-zbox {
-        margin-top: 20px; border: 2px solid ${zBorder};
-        border-radius: 12px; padding: 18px; text-align: center; background: ${zBg};
-      }
-      #__zakat_print_overlay .p-zlabel {
-        font-size: 9px; letter-spacing: .15em; text-transform: uppercase;
-        color: #c8a96e; margin-bottom: 6px; font-weight: 600;
-      }
-      #__zakat_print_overlay .p-zamt {
-        font-size: 32px; font-weight: 700; color: ${zColor};
-      }
-      #__zakat_print_overlay .p-zstatus {
-        font-size: 12px; color: ${zStatusClr}; margin-top: 5px;
-      }
-      #__zakat_print_overlay .p-actions {
-        display: flex; gap: 10px; margin-top: 24px;
-      }
-      #__zakat_print_overlay .p-btn {
-        flex: 1; padding: 13px; border: none; border-radius: 10px;
-        font-size: 15px; font-family: inherit; font-weight: 600; cursor: pointer;
-      }
-      #__zakat_print_overlay .p-btn-print { background: #1a6e2a; color: #fff; }
-      #__zakat_print_overlay .p-btn-close { background: #f0ece3; color: #555; }
-      #__zakat_print_overlay .p-foot {
-        margin-top: 18px; font-size: 10px; color: #bbb;
-        text-align: center; line-height: 1.8;
-      }
-      /* When printing: hide the app, show only the overlay */
-      @media print {
-        body > *:not(#__zakat_print_overlay) { display: none !important; }
-        #__zakat_print_overlay {
-          position: static !important; overflow: visible !important;
+  return (
+    <>
+      <style>{`
+        @media print {
+          body > *:not(#zakat-print-overlay) { display: none !important; }
+          #zakat-print-overlay { position: static !important; overflow: visible !important; }
+          .po-actions { display: none !important; }
         }
-        #__zakat_print_overlay .p-actions { display: none !important; }
-      }
-    </style>
-    <div class="p-inner">
-      <div class="p-logo">
-        <span class="p-arabic">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْم</span>
-        <h1>Zakat Calculation Summary</h1>
-        <p class="p-date">Prepared on ${today}</p>
-      </div>
-      ${assetRows ? `<div class="p-sec">Assets</div><table>${assetRows}</table>` : ""}
-      ${liabRows  ? `<div class="p-sec">Liabilities</div><table>${liabRows}</table>`  : ""}
-      <div class="p-sbox">
-        <div class="p-sr"><span>Total Assets</span><span>${formatINR(totalAssets)}</span></div>
-        <div class="p-sr"><span>Total Liabilities</span><span>− ${formatINR(totalLiabilities)}</span></div>
-        <div class="p-sr bold"><span>Net Zakatable Wealth</span><span>${formatINR(net)}</span></div>
-        <div class="p-sr" style="color:#aaa;font-size:12px">
-          <span>Nisab (Silver 595g × ₹${sp}/g)</span><span>${formatINR(nisab)}</span>
+      `}</style>
+      <div id="zakat-print-overlay" style={{
+        position:"fixed", inset:0, zIndex:99999, background:"#fff",
+        overflowY:"auto", WebkitOverflowScrolling:"touch",
+        fontFamily:"'Outfit','Segoe UI',sans-serif", color:"#1a1a1a"
+      }}>
+        <div style={{ maxWidth:600, margin:"0 auto", padding:"32px 24px 56px" }}>
+
+          {/* Header */}
+          <div style={{ textAlign:"center", borderBottom:"2px solid #c8a96e", paddingBottom:18, marginBottom:22 }}>
+            <span style={{ fontFamily:"'Amiri',serif", fontSize:24, color:"#c8a96e", display:"block", marginBottom:4 }}>
+              بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْم
+            </span>
+            <h1 style={{ fontSize:20, fontWeight:600, margin:0 }}>Zakat Calculation Summary</h1>
+            <p style={{ color:"#aaa", fontSize:12, marginTop:4 }}>Prepared on {today}</p>
+          </div>
+
+          {/* Assets */}
+          {assetRows.length > 0 && <>
+            <div style={{ fontSize:9, textTransform:"uppercase", letterSpacing:".12em", color:"#c8a96e", fontWeight:700, margin:"20px 0 6px", borderBottom:"1px solid #ede0c8", paddingBottom:3 }}>Assets</div>
+            <table style={{ width:"100%", borderCollapse:"collapse" }}>
+              {assetRows.map((r,i) => (
+                <tr key={i} style={{ borderBottom:"1px solid #f2ece0" }}>
+                  <td style={{ padding:"7px 3px", fontSize:13 }}>{r.l}</td>
+                  <td style={{ padding:"7px 3px", fontSize:13, textAlign:"right", color:"#7a5a20", fontWeight:500 }}>{formatINR(r.v)}</td>
+                </tr>
+              ))}
+            </table>
+          </>}
+
+          {/* Liabilities */}
+          {liabRows.length > 0 && <>
+            <div style={{ fontSize:9, textTransform:"uppercase", letterSpacing:".12em", color:"#c8a96e", fontWeight:700, margin:"20px 0 6px", borderBottom:"1px solid #ede0c8", paddingBottom:3 }}>Liabilities</div>
+            <table style={{ width:"100%", borderCollapse:"collapse" }}>
+              {liabRows.map((r,i) => (
+                <tr key={i} style={{ borderBottom:"1px solid #f2ece0" }}>
+                  <td style={{ padding:"7px 3px", fontSize:13 }}>{r.l}</td>
+                  <td style={{ padding:"7px 3px", fontSize:13, textAlign:"right", color:"#7a5a20", fontWeight:500 }}>{formatINR(r.v)}</td>
+                </tr>
+              ))}
+            </table>
+          </>}
+
+          {/* Summary box */}
+          <div style={{ background:"#faf7f0", border:"1px solid #e8ddc0", borderRadius:10, padding:"14px 16px", marginTop:20 }}>
+            {[
+              ["Total Assets",          formatINR(totalAssets),       false],
+              ["Total Liabilities",     "− " + formatINR(totalLiabilities), false],
+              ["Net Zakatable Wealth",  formatINR(net),               true],
+            ].map(([label, val, bold], i) => (
+              <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", fontSize: bold?14:13, fontWeight: bold?700:400, color: bold?"#1a1a1a":"#666", borderBottom: bold?"none":"1px solid #ede8d8" }}>
+                <span>{label}</span><span>{val}</span>
+              </div>
+            ))}
+            <div style={{ display:"flex", justifyContent:"space-between", padding:"6px 0 0", fontSize:11, color:"#aaa" }}>
+              <span>Nisab (Silver 595g × ₹{sp}/g)</span><span>{formatINR(nisab)}</span>
+            </div>
+          </div>
+
+          {/* Zakat due box */}
+          <div style={{ marginTop:20, border:`2px solid ${zBorder}`, borderRadius:12, padding:18, textAlign:"center", background:zBg }}>
+            <div style={{ fontSize:9, letterSpacing:".15em", textTransform:"uppercase", color:"#c8a96e", marginBottom:6, fontWeight:600 }}>Zakat Due @ 2.5%</div>
+            <div style={{ fontSize:32, fontWeight:700, color:zColor }}>
+              {meetsNisab ? formatINR(zakatDue) : "Not Obligatory"}
+            </div>
+            <div style={{ fontSize:12, color:zStatusClr, marginTop:5 }}>
+              {meetsNisab ? "✓ Nisab threshold met — Zakat is obligatory" : "✗ Wealth is below the Nisab threshold"}
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="po-actions" style={{ display:"flex", gap:10, marginTop:24 }}>
+            <button onClick={doPrint} style={{ flex:1, padding:13, border:"none", borderRadius:10, fontSize:15, fontFamily:"inherit", fontWeight:600, cursor:"pointer", background:"#1a6e2a", color:"#fff" }}>
+              🖨️ Print / Save as PDF
+            </button>
+            <button onClick={onClose} style={{ flex:1, padding:13, border:"none", borderRadius:10, fontSize:15, fontFamily:"inherit", fontWeight:600, cursor:"pointer", background:"#f0ece3", color:"#555" }}>
+              ✕ Close
+            </button>
+          </div>
+
+          <p style={{ marginTop:18, fontSize:10, color:"#ccc", textAlign:"center", lineHeight:1.8 }}>
+            Gold: ₹{gp}/gram · Silver: ₹{sp}/gram · {today}<br/>
+            Made with ❤️ by Danish · Consult a qualified Islamic scholar for your situation.
+          </p>
         </div>
       </div>
-      <div class="p-zbox">
-        <div class="p-zlabel">Zakat Due @ 2.5%</div>
-        <div class="p-zamt">${meetsNisab ? formatINR(zakatDue) : "Not Obligatory"}</div>
-        <div class="p-zstatus">${meetsNisab
-          ? "✓ Nisab threshold met — Zakat is obligatory"
-          : "✗ Wealth is below the Nisab threshold"}</div>
-      </div>
-      <div class="p-actions">
-        <button class="p-btn p-btn-print" id="__zakat_print_btn">🖨️ Print / Save as PDF</button>
-        <button class="p-btn p-btn-close" id="__zakat_close_btn">✕ Close</button>
-      </div>
-      <p class="p-foot">
-        Gold: ₹${gp}/gram &nbsp;·&nbsp; Silver: ₹${sp}/gram &nbsp;·&nbsp; ${today}<br/>
-        Made with ❤️ by Danish · Consult a qualified Islamic scholar for your situation.
-      </p>
-    </div>
-  `;
-
-  document.body.appendChild(overlay);
-
-  document.getElementById("__zakat_print_btn").onclick = () => window.print();
-  document.getElementById("__zakat_close_btn").onclick = () => overlay.remove();
+    </>
+  );
 };
+
+// triggerPrint is now handled via React state — see showPrint / printData in ZakatCalculator
+
 // ─── Brand SVG Icons ──────────────────────────────────────────────────────────
 const BrandIcons = {
   whatsapp: (
@@ -1014,6 +985,8 @@ export default function ZakatCalculator() {
   const [showHijri, setShowHijri]     = useState(false);
   const [showShare, setShowShare]     = useState(false);
   const [showWA, setShowWA]           = useState(false);
+  const [showPrint, setShowPrint]     = useState(false);
+  const [printData, setPrintData]     = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [toast, setToast]             = useState({ msg: "", show: false });
 
@@ -1039,7 +1012,7 @@ export default function ZakatCalculator() {
   const allFields = [cashSavings, investments, businessAssets, receivables, otherAssets, goldGrams, silverGrams, goldPrice, silverPrice, debts, expenses];
 
   const handleReset = () => {
-   // if (!window.confirm(t.resetConfirm)) return;
+    // if (!window.confirm(t.resetConfirm)) return;
     // Directly call setDisplay on each field — no stale closure issues
     cashSavings.setDisplay("");
     investments.setDisplay("");
@@ -1088,6 +1061,11 @@ export default function ZakatCalculator() {
     { s:"l", l: t.fDebts,   v: debts.numeric },
     { s:"l", l: t.fExp,     v: expenses.numeric },
   ].filter(r => r.v > 0);
+
+  const doShowPrint = () => {
+    setPrintData({ rows: printRows, totalAssets, totalLiabilities, net: netZakatableWealth, nisab: nisabThreshold, meetsNisab, zakatDue, gp: goldPrice.numeric, sp: silverPrice.numeric });
+    setShowPrint(true);
+  };
 
   const filled   = [cashSavings, investments, businessAssets, receivables, otherAssets, goldGrams, silverGrams, debts, expenses].filter(f => f.numeric > 0).length;
   const total9   = 9;
@@ -1356,6 +1334,7 @@ export default function ZakatCalculator() {
       {showHijri && <HijriModal onClose={() => setShowHijri(false)} meetsNisab={meetsNisab} t={t} />}
       {showShare  && <ShareModal onClose={() => setShowShare(false)} t={t} />}
       {showWA     && <WhatsAppModal onClose={() => setShowWA(false)} zakatDue={zakatDue} t={t} />}
+      {showPrint && printData && <PrintOverlay data={printData} onClose={() => setShowPrint(false)} />}
       {/* settings backdrop handled by useEffect */}
 
       <Toast msg={toast.msg} show={toast.show} />
@@ -1396,7 +1375,7 @@ export default function ZakatCalculator() {
                 langCode={langCode}
                 setLangCode={setLangCode}
                 onWA={() => setShowWA(true)}
-                onPrint={() => triggerPrint({ rows: printRows, totalAssets, totalLiabilities, net: netZakatableWealth, nisab: nisabThreshold, meetsNisab, zakatDue, gp: goldPrice.numeric, sp: silverPrice.numeric })}
+                onPrint={doShowPrint}
               />
             </div>
           </div>
@@ -1523,7 +1502,7 @@ export default function ZakatCalculator() {
               <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
               Share
             </button>
-            <button className="sticky-print-btn" onClick={() => triggerPrint({ rows: printRows, totalAssets, totalLiabilities, net: netZakatableWealth, nisab: nisabThreshold, meetsNisab, zakatDue, gp: goldPrice.numeric, sp: silverPrice.numeric })}>
+            <button className="sticky-print-btn" onClick={doShowPrint}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
               PDF
             </button>
