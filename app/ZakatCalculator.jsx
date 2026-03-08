@@ -67,6 +67,27 @@ const LANGS = {
     shareEmail: "Email",
     shareMore: "More options...",
     modalClose: "Close",
+    secFitrah: "🌾 Zakat Fitrah",
+    fitrahPersons: "Household members",
+    fitrahPersonsH: "Yourself, spouse, children, elderly parents, dependents",
+    fitrahCommodity: "Commodity basis",
+    fitrahRate: "Rate per person",
+    fitrahRateH: "Your local mosque's announced rate for this year",
+    fitrahTotal: "Total Zakat Fitrah",
+    fitrahDue: "Fitrah Due",
+    fitrahWhen: "When to pay",
+    fitrahWhenVal: "Before Eid prayer — last few days of Ramadan is best",
+    fitrahWho: "Who pays",
+    fitrahWhoVal: "Every Muslim with food beyond day's need on Eid night — pay on behalf of all dependents",
+    fitrahGoes: "Who receives it",
+    fitrahGoesVal: "Only the poor & needy (Asnaf). Must reach them before Eid prayer.",
+    fitrahWhat: "What is Zakat Fitrah?",
+    fitrahWhatVal: "A purification of the fast (Ramadan) — not wealth-based like Zakat Mal. Ibn Abbas (RA) said: the Prophet ﷺ made Zakat Fitrah obligatory as a purification of the fasting person from vain talk and obscenity, and as food for the needy.",
+    fitrahDiff: "Difference from Zakat Mal",
+    fitrahDiffVal: "Zakat Mal is on accumulated wealth (2.5% above Nisab). Zakat Fitrah is a fixed amount per person — obligatory on rich and poor alike, as long as they have food for that day.",
+    commodities: { rice: "Rice", wheat: "Wheat", dates: "Dates", cash: "Cash (custom)" },
+    commodityRates: { rice: 130, wheat: 60, dates: 400, cash: 120 },
+    commodityWeights: { rice: "2.5 kg", wheat: "2.5 kg", dates: "2.5 kg", cash: "Local rate" },
   },
   ar: {
     code: "ar", flag: "🇸🇦", label: "عربي", dir: "rtl",
@@ -124,6 +145,27 @@ const LANGS = {
     shareEmail: "البريد الإلكتروني",
     shareMore: "خيارات أخرى...",
     modalClose: "إغلاق",
+    secFitrah: "🌾 زكاة الفطر",
+    fitrahPersons: "أفراد المنزل",
+    fitrahPersonsH: "أنت، الزوج، الأطفال، الوالدان المسنان، المعالون",
+    fitrahCommodity: "أساس الصنف",
+    fitrahRate: "المقدار للفرد",
+    fitrahRateH: "المبلغ الذي أعلنته مسجدك المحلي لهذا العام",
+    fitrahTotal: "إجمالي زكاة الفطر",
+    fitrahDue: "الفطرة المستحقة",
+    fitrahWhen: "وقت الأداء",
+    fitrahWhenVal: "قبل صلاة العيد — الأفضل في الأيام الأخيرة من رمضان",
+    fitrahWho: "من يؤدي",
+    fitrahWhoVal: "كل مسلم يملك قوتاً زائداً عن يومه — يؤدي عن نفسه وعمن يعول",
+    fitrahGoes: "لمن تُعطى",
+    fitrahGoesVal: "للفقراء والمساكين فقط، ويجب أن تصلهم قبل صلاة العيد",
+    fitrahWhat: "ما هي زكاة الفطر؟",
+    fitrahWhatVal: "طهرة للصائم من اللغو والرفث، وطعمة للمساكين — كما فرضها النبي ﷺ",
+    fitrahDiff: "الفرق عن زكاة المال",
+    fitrahDiffVal: "زكاة المال على الثروة المتراكمة (2.5%) فوق النصاب. أما زكاة الفطر فمقدار ثابت للفرد، تجب على الغني والفقير إذا وجد قوت يومه.",
+    commodities: { rice: "أرز", wheat: "قمح", dates: "تمر", cash: "نقدًا (مخصص)" },
+    commodityRates: { rice: 130, wheat: 60, dates: 400, cash: 120 },
+    commodityWeights: { rice: "2.5 كجم", wheat: "2.5 كجم", dates: "2.5 كجم", cash: "السعر المحلي" },
   },
   ur: {
     code: "ur", flag: "🇵🇰", label: "اردو", dir: "rtl",
@@ -181,6 +223,27 @@ const LANGS = {
     shareEmail: "ای میل",
     shareMore: "مزید اختیارات...",
     modalClose: "بند کریں",
+    secFitrah: "🌾 زکوٰۃ الفطر",
+    fitrahPersons: "گھر کے افراد",
+    fitrahPersonsH: "آپ، بیوی، بچے، بوڑھے والدین اور زیر کفالت افراد",
+    fitrahCommodity: "اجناس کی بنیاد",
+    fitrahRate: "فی فرد فطرانہ",
+    fitrahRateH: "اس سال آپ کی مقامی مسجد کا اعلان کردہ مقدار",
+    fitrahTotal: "کل زکوٰۃ الفطر",
+    fitrahDue: "فطرانہ واجب",
+    fitrahWhen: "کب ادا کریں",
+    fitrahWhenVal: "نماز عید سے پہلے — رمضان کے آخری دنوں میں ادا کرنا بہتر ہے",
+    fitrahWho: "کون ادا کرے",
+    fitrahWhoVal: "ہر وہ مسلمان جس کے پاس عید کی رات ایک دن کا کھانا موجود ہو — اپنی طرف سے اور تمام زیر کفالت افراد کی طرف سے ادا کرے",
+    fitrahGoes: "کسے ملے",
+    fitrahGoesVal: "صرف غریب اور محتاج افراد کو — نماز عید سے پہلے پہنچنا ضروری ہے",
+    fitrahWhat: "زکوٰۃ الفطر کیا ہے؟",
+    fitrahWhatVal: "روزے کی پاکیزگی — لغو اور بے ہودہ باتوں سے — اور مساکین کے لیے کھانا۔ حضور ﷺ نے اسے فرض قرار دیا۔",
+    fitrahDiff: "زکوٰۃ المال سے فرق",
+    fitrahDiffVal: "زکوٰۃ المال جمع شدہ دولت پر (2.5%) نصاب سے اوپر ہوتی ہے۔ زکوٰۃ الفطر فی کس مقررہ مقدار ہے — امیر اور غریب سب پر واجب، بشرطیکہ اس دن کا کھانا میسر ہو۔",
+    commodities: { rice: "چاول", wheat: "گندم", dates: "کھجور", cash: "نقد (حسب مرضی)" },
+    commodityRates: { rice: 130, wheat: 60, dates: 400, cash: 120 },
+    commodityWeights: { rice: "2.5 کلو", wheat: "2.5 کلو", dates: "2.5 کلو", cash: "مقامی نرخ" },
   },
   hi: {
     code: "hi", flag: "🇮🇳", label: "हिंदी", dir: "ltr",
@@ -238,6 +301,27 @@ const LANGS = {
     shareEmail: "Email",
     shareMore: "और विकल्प...",
     modalClose: "बंद करें",
+    secFitrah: "🌾 ज़कात-उल-फ़ित्र",
+    fitrahPersons: "परिवार के सदस्य",
+    fitrahPersonsH: "स्वयं, जीवनसाथी, बच्चे, वृद्ध माता-पिता, आश्रित",
+    fitrahCommodity: "अनाज का आधार",
+    fitrahRate: "प्रति व्यक्ति दर",
+    fitrahRateH: "इस वर्ष आपकी स्थानीय मस्जिद की घोषित दर",
+    fitrahTotal: "कुल ज़कात-उल-फ़ित्र",
+    fitrahDue: "फ़ित्रा देय",
+    fitrahWhen: "कब अदा करें",
+    fitrahWhenVal: "ईद की नमाज़ से पहले — रमज़ान के अंतिम दिनों में अदा करना उत्तम है",
+    fitrahWho: "कौन अदा करे",
+    fitrahWhoVal: "हर वह मुसलमान जिसके पास ईद की रात एक दिन का खाना हो — स्वयं और सभी आश्रितों की ओर से",
+    fitrahGoes: "किसे दें",
+    fitrahGoesVal: "केवल ग़रीब और ज़रूरतमंद को — ईद की नमाज़ से पहले पहुँचना अनिवार्य",
+    fitrahWhat: "ज़कात-उल-फ़ित्र क्या है?",
+    fitrahWhatVal: "रोज़े की पाकीज़गी — बेकार बातों और गुनाहों से — और ग़रीबों के लिए खाना। नबी ﷺ ने इसे फ़र्ज़ किया।",
+    fitrahDiff: "ज़कात माल से अंतर",
+    fitrahDiffVal: "ज़कात माल संचित धन पर (2.5%) निसाब से ऊपर लगती है। ज़कात फ़ित्र प्रति व्यक्ति निश्चित राशि है — अमीर-ग़रीब सभी पर अनिवार्य, बशर्ते उस दिन का खाना हो।",
+    commodities: { rice: "चावल", wheat: "गेहूँ", dates: "खजूर", cash: "नक़द (कस्टम)" },
+    commodityRates: { rice: 130, wheat: 60, dates: 400, cash: 120 },
+    commodityWeights: { rice: "2.5 किलो", wheat: "2.5 किलो", dates: "2.5 किलो", cash: "स्थानीय दर" },
   },
 };
 
@@ -329,6 +413,12 @@ const GUIDE = [
   { icon: "🎁", title: "Who Receives Zakat?",
     body: "The Quran (9:60) specifies 8 categories: the poor, the needy, Zakat administrators, new Muslims, freeing captives (historical), debtors, in the path of Allah, and stranded travellers.",
     tip: "Zakat cannot be given to parents, children, spouse, or non-Muslims (per most schools)." },
+  { icon: "🌾", title: "Zakat Fitrah (Fitrana)",
+    body: "Zakat Fitrah is a compulsory act of charity paid at the end of Ramadan. It differs from Zakat Mal (wealth) in several key ways:\n\n• Fixed amount per person — not percentage based\n• Obligatory on every Muslim (rich or poor) who has food beyond their day's need on Eid night\n• Must be paid on behalf of all dependents: spouse, children, elderly parents\n• Amount: 1 Sa' (≈ 2.5–3kg) of the local staple food — rice, wheat, dates, or barley — or its cash equivalent\n• Must reach the poor BEFORE the Eid prayer — this is a condition, not just a preference\n• Can be paid in the last few days of Ramadan to ensure timely distribution",
+    tip: "Ibn Abbas (RA) narrated: 'The Prophet ﷺ made Zakat Fitrah obligatory as a purification for the fasting person from vain talk and obscenity, and as food for the poor.' (Abu Dawud)" },
+  { icon: "🌾", title: "Zakat Fitrah vs Zakat Mal",
+    body: "These are two separate obligations:\n\nZakat Mal (Wealth Zakat):\n• On accumulated assets above Nisab threshold\n• Rate: 2.5% of net zakatable wealth\n• Paid once Hawl (1 lunar year) has passed\n• Not everyone is obligated — only those above Nisab\n\nZakat Fitrah (Fitrana):\n• Fixed amount per person (not % of wealth)\n• Obligatory on every Muslim with a day's food\n• Paid before Eid prayer each Ramadan\n• Even those below Nisab must pay if they have the day's food",
+    tip: "You may owe both Zakat Mal AND Zakat Fitrah in the same year — they are separate duties." },
 ];
 
 // ─── Donut Chart ──────────────────────────────────────────────────────────────
@@ -489,6 +579,19 @@ const generatePDF = async (data) => {
     W/2, y + 23, { align:"center" }
   );
   y += boxH + 10;
+
+  // Fitrah section
+  const { fitrahPersons: fp, fitrahRate: fr, fitrahTotal: ft, fitrahCommodity: fc } = data;
+  if (fp && fr && ft) {
+    if (y + 32 > 270) { doc.addPage(); y = 20; }
+    secLabel("Zakat Fitrah (Fitrana)");
+    row("Household members", String(fp), false, DARK, DARK);
+    row("Commodity", fc ? fc.charAt(0).toUpperCase() + fc.slice(1) : "Rice", false, DARK, DARK);
+    row("Rate per person", fmtPDF(fr), false, DARK, DGOLD);
+    row("Total Zakat Fitrah", fmtPDF(ft), true, DARK, GREEN);
+    doc.setFontSize(7.5); doc.setFont("helvetica","normal"); setClr(LGREY);
+    doc.text("Must be paid before Eid prayer. For each household member.", margin, y); y += 8;
+  }
 
   // Footer
   doc.setFontSize(7.5); doc.setFont("helvetica","normal"); setClr(LGREY);
@@ -1134,11 +1237,15 @@ export default function ZakatCalculator() {
   const silverPrice    = useIndianInput(DEFAULT_SILVER_PRICE);
   const debts          = useIndianInput(0);
   const expenses       = useIndianInput(0);
+  const [fitrahPersons, setFitrahPersons] = useState(1);
+  const [fitrahCommodity, setFitrahCommodity] = useState("rice");
+  const [fitrahExpanded, setFitrahExpanded] = useState(false);
+  const fitrahRate = useIndianInput(130); // rice default
 
   const allFields = [cashSavings, investments, businessAssets, receivables, otherAssets, goldGrams, silverGrams, goldPrice, silverPrice, debts, expenses];
 
   const handleReset = () => {
-    // if (!window.confirm(t.resetConfirm)) return;
+   // if (!window.confirm(t.resetConfirm)) return;
     // Directly call setDisplay on each field — no stale closure issues
     cashSavings.setDisplay("");
     investments.setDisplay("");
@@ -1151,6 +1258,10 @@ export default function ZakatCalculator() {
     expenses.setDisplay("");
     goldPrice.setDisplay(formatIndian(DEFAULT_GOLD_PRICE));
     silverPrice.setDisplay(formatIndian(DEFAULT_SILVER_PRICE));
+    fitrahRate.setDisplay(formatIndian(130));
+    setFitrahPersons(1);
+    setFitrahCommodity("rice");
+    setFitrahExpanded(false);
     showToast("↺ All fields reset");
   };
 
@@ -1165,6 +1276,16 @@ export default function ZakatCalculator() {
   const nisabThreshold     = Math.min(goldNisabValue, silverNisabValue);
   const meetsNisab         = netZakatableWealth >= nisabThreshold && netZakatableWealth > 0;
   const zakatDue           = meetsNisab ? netZakatableWealth * ZAKAT_RATE : 0;
+
+  // When commodity changes, auto-fill the default rate
+  useEffect(() => {
+    if (!t.commodityRates) return;
+    if (fitrahCommodity !== "cash") {
+      fitrahRate.setDisplay(formatIndian(t.commodityRates[fitrahCommodity]));
+    }
+  }, [fitrahCommodity, langCode]);
+
+  const fitrahTotal = fitrahPersons * fitrahRate.numeric;
 
   const chartData = [
     { label: t.fCash,    value: cashSavings.numeric },
@@ -1189,7 +1310,7 @@ export default function ZakatCalculator() {
   ].filter(r => r.v > 0);
 
   const doShowPrint = () => {
-    setPrintData({ rows: printRows, totalAssets, totalLiabilities, net: netZakatableWealth, nisab: nisabThreshold, meetsNisab, zakatDue, gp: goldPrice.numeric, sp: silverPrice.numeric });
+    setPrintData({ rows: printRows, totalAssets, totalLiabilities, net: netZakatableWealth, nisab: nisabThreshold, meetsNisab, zakatDue, gp: goldPrice.numeric, sp: silverPrice.numeric, fitrahPersons, fitrahRate: fitrahRate.numeric, fitrahTotal, fitrahCommodity });
     setShowPrint(true);
   };
 
@@ -1317,6 +1438,45 @@ export default function ZakatCalculator() {
         .legend-amt { color: #4a6a4c; font-size: 0.68rem; font-variant-numeric: tabular-nums; }
 
         /* ── Sticky bar ── */
+        /* ── Fitrah section ── */
+        .fitrah-card { background: linear-gradient(150deg,#0f1e10,#101808); border:1px solid #c8a96e35; border-radius:14px; overflow:hidden; margin-bottom:1rem; }
+        .fitrah-head { display:flex; align-items:center; justify-content:space-between; padding:0.85rem 1.2rem; border-bottom:1px solid #c8a96e20; background:#0c1508; cursor:pointer; user-select:none; }
+        .fitrah-head-left { display:flex; align-items:center; gap:0.6rem; }
+        .fitrah-head-title { font-size:0.78rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#c8a96e; }
+        .fitrah-head-badge { font-size:0.7rem; background:#1a3010; border:1px solid #c8a96e30; color:#c8a96e; border-radius:20px; padding:0.15rem 0.55rem; }
+        .fitrah-chevron { color:#3a5a3c; font-size:0.75rem; transition:transform 0.25s; }
+        .fitrah-chevron.open { transform:rotate(180deg); }
+        .fitrah-body { padding:0.9rem 1.2rem 1.1rem; }
+        .fitrah-commodity-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:0.4rem; margin-bottom:1rem; }
+        .fitrah-chip { padding:0.45rem 0.1rem; border:1px solid #1e3018; border-radius:8px; background:#0a1209; cursor:pointer; text-align:center; transition:all 0.15s; font-family:inherit; }
+        .fitrah-chip:hover { border-color:#3a5a3c; }
+        .fitrah-chip.active { border-color:#c8a96e; background:#1a2a08; box-shadow:0 0 0 1px #c8a96e20; }
+        .fitrah-chip-icon { font-size:1.1rem; display:block; }
+        .fitrah-chip-label { font-size:0.6rem; color:#8aaa8c; margin-top:2px; display:block; }
+        .fitrah-chip-rate { font-size:0.58rem; color:#c8a96e90; display:block; }
+        .fitrah-row { display:flex; align-items:center; gap:0.75rem; margin-bottom:0.85rem; }
+        .fitrah-label { font-size:0.78rem; color:#8aaa8c; flex:1; }
+        .fitrah-hint { font-size:0.67rem; color:#3a5a3c; margin-top:2px; }
+        .fitrah-stepper { display:flex; align-items:center; border:1px solid #2a4a1c; border-radius:9px; overflow:hidden; flex-shrink:0; }
+        .fitrah-step-btn { width:38px; height:38px; background:#0d1a0d; border:none; color:#c8a96e; font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.15s; }
+        .fitrah-step-btn:hover:not(:disabled) { background:#1a2e1a; }
+        .fitrah-step-btn:disabled { opacity:0.3; cursor:default; }
+        .fitrah-count { min-width:44px; text-align:center; font-size:1.05rem; font-weight:700; color:#f0ece3; background:#0a1209; line-height:38px; }
+        .fitrah-result { background:linear-gradient(135deg,#0d1a08,#111c09); border:1px solid #c8a96e30; border-radius:12px; padding:1rem 1.1rem; margin-top:0.6rem; }
+        .fitrah-result-top { display:flex; justify-content:space-between; align-items:center; }
+        .fitrah-result-label { font-size:0.72rem; color:#6a8a6c; text-transform:uppercase; letter-spacing:0.06em; }
+        .fitrah-result-formula { font-size:0.65rem; color:#3a5a3c; margin-top:3px; }
+        .fitrah-result-amount { font-size:1.5rem; font-weight:700; color:#c8a96e; }
+        .fitrah-divider { border:none; border-top:1px solid #1a2e1a; margin:0.85rem 0; }
+        .fitrah-info-toggle { display:flex; align-items:center; gap:0.4rem; font-size:0.72rem; color:#3a5a3c; cursor:pointer; background:none; border:none; font-family:inherit; padding:0; margin-bottom:0.6rem; }
+        .fitrah-info-toggle:hover { color:#6a8a6c; }
+        .fitrah-facts { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; }
+        .fitrah-fact { background:#0a1209; border:1px solid #1a2e1a; border-radius:8px; padding:0.6rem 0.7rem; }
+        .fitrah-fact-icon { font-size:0.9rem; margin-bottom:3px; }
+        .fitrah-fact-title { font-size:0.62rem; text-transform:uppercase; letter-spacing:0.08em; color:#c8a96e80; margin-bottom:3px; }
+        .fitrah-fact-text { font-size:0.7rem; color:#6a8a7c; line-height:1.5; }
+        .fitrah-hadith { margin-top:0.7rem; padding:0.65rem 0.8rem; background:#0a120a; border-left:2px solid #c8a96e50; border-radius:0 8px 8px 0; font-size:0.68rem; color:#3a5a3c; line-height:1.65; font-style:italic; }
+
         .sticky-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; background: #0b1210f2; backdrop-filter: blur(14px); border-top: 1px solid #1e3020; padding: 0.65rem 1.25rem; }
         .sticky-bar-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; gap: 0.65rem; }
         .sticky-left { display: flex; align-items: center; gap: 1.1rem; flex: 1; min-width: 0; }
@@ -1594,6 +1754,107 @@ export default function ZakatCalculator() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* ── Zakat Fitrah Card ── */}
+              <div className="fitrah-card" dir={t.dir}>
+                {/* Collapsible header */}
+                <div className="fitrah-head" onClick={() => setFitrahExpanded(v => !v)}>
+                  <div className="fitrah-head-left">
+                    <span style={{ fontSize:"1.1rem" }}>🌾</span>
+                    <span className="fitrah-head-title">{t.secFitrah.replace("🌾 ","")}</span>
+                    {fitrahTotal > 0 && (
+                      <span className="fitrah-head-badge">{formatINR(fitrahTotal)}</span>
+                    )}
+                  </div>
+                  <span className={`fitrah-chevron ${fitrahExpanded ? "open" : ""}`}>▼</span>
+                </div>
+
+                {fitrahExpanded && (
+                  <div className="fitrah-body">
+
+                    {/* Commodity selector */}
+                    <div style={{ fontSize:"0.72rem", color:"#6a8a6c", marginBottom:"0.5rem", textTransform:"uppercase", letterSpacing:"0.06em" }}>{t.fitrahCommodity}</div>
+                    <div className="fitrah-commodity-grid">
+                      {[
+                        { id:"rice",  icon:"🍚", label: t.commodities?.rice  || "Rice"  },
+                        { id:"wheat", icon:"🌾", label: t.commodities?.wheat || "Wheat" },
+                        { id:"dates", icon:"🌴", label: t.commodities?.dates || "Dates" },
+                        { id:"cash",  icon:"💵", label: t.commodities?.cash  || "Cash"  },
+                      ].map(c => (
+                        <button key={c.id}
+                          className={`fitrah-chip ${fitrahCommodity === c.id ? "active" : ""}`}
+                          onClick={() => setFitrahCommodity(c.id)}>
+                          <span className="fitrah-chip-icon">{c.icon}</span>
+                          <span className="fitrah-chip-label">{c.label}</span>
+                          {c.id !== "cash" && (
+                            <span className="fitrah-chip-rate">{t.commodityWeights?.[c.id]}</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Persons + rate row */}
+                    <div className="fitrah-row">
+                      <div style={{ flex:1 }}>
+                        <div className="fitrah-label">{t.fitrahPersons}</div>
+                        <div className="fitrah-hint">{t.fitrahPersonsH}</div>
+                      </div>
+                      <div className="fitrah-stepper">
+                        <button className="fitrah-step-btn" disabled={fitrahPersons<=1} onClick={() => setFitrahPersons(p => Math.max(1,p-1))}>−</button>
+                        <div className="fitrah-count">{fitrahPersons}</div>
+                        <button className="fitrah-step-btn" disabled={fitrahPersons>=20} onClick={() => setFitrahPersons(p => Math.min(20,p+1))}>+</button>
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom:"0.8rem" }}>
+                      <div style={{ fontSize:"0.72rem", color:"#6a8a6c", marginBottom:"0.25rem" }}>{t.fitrahRate}</div>
+                      <div style={{ fontSize:"0.65rem", color:"#3a5a3c", marginBottom:"0.4rem" }}>{t.fitrahRateH}</div>
+                      <InputRow label="" field={fitrahRate} />
+                    </div>
+
+                    {/* Result */}
+                    <div className="fitrah-result">
+                      <div className="fitrah-result-top">
+                        <div>
+                          <div className="fitrah-result-label">{t.fitrahDue}</div>
+                          <div className="fitrah-result-formula">{fitrahPersons} {t.dir==="rtl"?"×":"×"} {formatINR(fitrahRate.numeric)}</div>
+                        </div>
+                        <div className="fitrah-result-amount">{formatINR(fitrahTotal)}</div>
+                      </div>
+                    </div>
+
+                    <hr className="fitrah-divider" />
+
+                    {/* Explainer facts */}
+                    <div className="fitrah-facts">
+                      <div className="fitrah-fact">
+                        <div className="fitrah-fact-icon">⏰</div>
+                        <div className="fitrah-fact-title">{t.fitrahWhen}</div>
+                        <div className="fitrah-fact-text">{t.fitrahWhenVal}</div>
+                      </div>
+                      <div className="fitrah-fact">
+                        <div className="fitrah-fact-icon">🤲</div>
+                        <div className="fitrah-fact-title">{t.fitrahWho}</div>
+                        <div className="fitrah-fact-text">{t.fitrahWhoVal}</div>
+                      </div>
+                      <div className="fitrah-fact">
+                        <div className="fitrah-fact-icon">🕌</div>
+                        <div className="fitrah-fact-title">{t.fitrahGoes}</div>
+                        <div className="fitrah-fact-text">{t.fitrahGoesVal}</div>
+                      </div>
+                      <div className="fitrah-fact">
+                        <div className="fitrah-fact-icon">⚖️</div>
+                        <div className="fitrah-fact-title">{t.fitrahDiff}</div>
+                        <div className="fitrah-fact-text">{t.fitrahDiffVal}</div>
+                      </div>
+                    </div>
+
+                    <div className="fitrah-hadith">
+                      📖 {t.fitrahWhatVal}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <p className="footer-note">
