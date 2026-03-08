@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Zakaat Calculator",
+  title: "Zakat Calculator",
   description: "Calculate your Zakaat with ease. Input your assets, and let our calculator do the work. Accurate, fast, and free to use.",
 };
 
