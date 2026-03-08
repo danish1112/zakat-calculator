@@ -388,6 +388,104 @@ const DonutChart = ({ data, emptyText }) => {
 
 // ─── Print ────────────────────────────────────────────────────────────────────
 // ─── Print Overlay Component ─────────────────────────────────────────────────
+// Load jsPDF from CDN — tiny, no dependencies, works on all mobile browsers
+const loadJsPDF = () => new Promise((resolve, reject) => {
+  if (window.jspdf) { resolve(window.jspdf.jsPDF); return; }
+  const s = document.createElement("script");
+  s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+  s.onload = () => resolve(window.jspdf.jsPDF);
+  s.onerror = reject;
+  document.head.appendChild(s);
+});
+
+const generatePDF = async (data) => {
+  const { rows, totalAssets, totalLiabilities, net, nisab, meetsNisab, zakatDue, gp, sp } = data;
+  const JsPDF = await loadJsPDF();
+  const doc = new JsPDF({ unit: "mm", format: "a4" });
+  const W = 210, margin = 18, contentW = W - margin * 2;
+  const today = new Date().toLocaleDateString("en-IN", { day:"numeric", month:"long", year:"numeric" });
+  let y = 20;
+
+  const gold = [200, 169, 110], darkGold = [122, 90, 32];
+  const green = [26, 110, 42], darkGrey = [26, 26, 26], grey = [100, 100, 100], lightGrey = [200, 200, 200];
+
+  // ── Header ──
+  doc.setFontSize(18); doc.setFont("helvetica","bold"); doc.setTextColor(...darkGrey);
+  doc.text("Zakat Calculation Summary", W/2, y, { align:"center" }); y += 7;
+  doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(...grey);
+  doc.text(`Prepared on ${today}`, W/2, y, { align:"center" }); y += 4;
+  doc.setDrawColor(...gold); doc.setLineWidth(0.6);
+  doc.line(margin, y, W-margin, y); y += 8;
+
+  const sectionLabel = (label) => {
+    doc.setFontSize(7.5); doc.setFont("helvetica","bold"); doc.setTextColor(...gold);
+    doc.text(label.toUpperCase(), margin, y); y += 1.5;
+    doc.setDrawColor(...gold[0], ...gold.slice(1)); doc.setLineWidth(0.2);
+    doc.line(margin, y, W-margin, y); y += 5;
+  };
+
+  const tableRow = (label, value, bold=false, labelColor=darkGrey, valueColor=darkGold) => {
+    if (y > 265) { doc.addPage(); y = 20; }
+    doc.setFontSize(10.5);
+    doc.setFont("helvetica", bold ? "bold" : "normal");
+    doc.setTextColor(...labelColor); doc.text(label, margin, y);
+    doc.setTextColor(...valueColor); doc.text(value, W-margin, y, { align:"right" });
+    doc.setDrawColor(...lightGrey); doc.setLineWidth(0.15);
+    doc.line(margin, y+1.5, W-margin, y+1.5);
+    y += 7;
+  };
+
+  // ── Assets ──
+  const assetRows = rows.filter(r => r.s === "a");
+  if (assetRows.length) {
+    sectionLabel("Assets");
+    assetRows.forEach(r => tableRow(r.l, formatINR(r.v)));
+    y += 2;
+  }
+
+  // ── Liabilities ──
+  const liabRows = rows.filter(r => r.s === "l");
+  if (liabRows.length) {
+    sectionLabel("Liabilities");
+    liabRows.forEach(r => tableRow(r.l, formatINR(r.v)));
+    y += 2;
+  }
+
+  // ── Summary box ──
+  sectionLabel("Summary");
+  tableRow("Total Assets",         formatINR(totalAssets));
+  tableRow("Total Liabilities",    "− " + formatINR(totalLiabilities));
+  tableRow("Net Zakatable Wealth", formatINR(net), true, darkGrey, green);
+  doc.setFontSize(8.5); doc.setFont("helvetica","normal"); doc.setTextColor(...lightGrey);
+  doc.text(`Nisab threshold: Silver 595g × ₹${sp}/g = ${formatINR(nisab)}`, margin, y); y += 10;
+
+  // ── Zakat due box ──
+  const boxH = 28;
+  if (y + boxH > 270) { doc.addPage(); y = 20; }
+  const boxColor = meetsNisab ? [240,250,242] : [253,245,245];
+  const borderClr = meetsNisab ? [92,184,106] : [224,124,124];
+  doc.setFillColor(...boxColor); doc.setDrawColor(...borderClr); doc.setLineWidth(0.5);
+  doc.roundedRect(margin, y, contentW, boxH, 3, 3, "FD");
+  doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...gold);
+  doc.text("ZAKAT DUE @ 2.5%", W/2, y+6, { align:"center" });
+  doc.setFontSize(18); doc.setFont("helvetica","bold");
+  doc.setTextColor(...(meetsNisab ? green : [150,150,150]));
+  doc.text(meetsNisab ? formatINR(zakatDue) : "Not Obligatory", W/2, y+16, { align:"center" });
+  doc.setFontSize(8); doc.setFont("helvetica","normal");
+  doc.setTextColor(...(meetsNisab ? [42,138,58] : [192,80,80]));
+  doc.text(meetsNisab ? "✓ Nisab threshold met" : "✗ Wealth is below Nisab threshold", W/2, y+23, { align:"center" });
+  y += boxH + 10;
+
+  // ── Footer ──
+  doc.setFontSize(7.5); doc.setFont("helvetica","normal"); doc.setTextColor(...lightGrey);
+  doc.text(`Gold: ₹${gp}/g  ·  Silver: ₹${sp}/g  ·  ${today}`, W/2, y, { align:"center" }); y+=4;
+  doc.text("Made with ❤ by Danish  ·  Consult a qualified Islamic scholar for your situation.", W/2, y, { align:"center" });
+
+  // ── Save ──
+  const filename = `Zakat-Summary-${new Date().getFullYear()}.pdf`;
+  doc.save(filename);
+};
+
 const PrintOverlay = ({ data, onClose }) => {
   const { rows, totalAssets, totalLiabilities, net, nisab, meetsNisab, zakatDue, gp, sp } = data;
   const today = new Date().toLocaleDateString("en-IN", { day:"numeric", month:"long", year:"numeric" });
@@ -397,8 +495,16 @@ const PrintOverlay = ({ data, onClose }) => {
   const zBorder    = meetsNisab ? "#5cb86a" : "#e07c7c";
   const zBg        = meetsNisab ? "#f0faf2" : "#fdf5f5";
   const zStatusClr = meetsNisab ? "#2a8a3a" : "#c05050";
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   const doPrint = () => window.print();
+  const doDownloadPDF = async () => {
+    setPdfLoading(true);
+    try { await generatePDF(data); } catch(e) { alert("PDF generation failed. Please try again."); }
+    setPdfLoading(false);
+  };
 
   return (
     <>
@@ -479,11 +585,19 @@ const PrintOverlay = ({ data, onClose }) => {
           </div>
 
           {/* Action buttons */}
-          <div className="po-actions" style={{ display:"flex", gap:10, marginTop:24 }}>
-            <button onClick={doPrint} style={{ flex:1, padding:13, border:"none", borderRadius:10, fontSize:15, fontFamily:"inherit", fontWeight:600, cursor:"pointer", background:"#1a6e2a", color:"#fff" }}>
-              🖨️ Print / Save as PDF
+          <div className="po-actions" style={{ display:"flex", flexDirection:"column", gap:10, marginTop:24 }}>
+            <button
+              onClick={doDownloadPDF}
+              disabled={pdfLoading}
+              style={{ width:"100%", padding:14, border:"none", borderRadius:10, fontSize:15, fontFamily:"inherit", fontWeight:600, cursor:pdfLoading?"wait":"pointer", background:"#1a6e2a", color:"#fff", opacity:pdfLoading?0.7:1 }}>
+              {pdfLoading ? "⏳ Generating PDF..." : "⬇️ Download PDF"}
             </button>
-            <button onClick={onClose} style={{ flex:1, padding:13, border:"none", borderRadius:10, fontSize:15, fontFamily:"inherit", fontWeight:600, cursor:"pointer", background:"#f0ece3", color:"#555" }}>
+            {!isMobile && (
+              <button onClick={doPrint} style={{ width:"100%", padding:14, border:"1px solid #d0c8b8", borderRadius:10, fontSize:15, fontFamily:"inherit", fontWeight:600, cursor:"pointer", background:"#faf7f0", color:"#555" }}>
+                🖨️ Print
+              </button>
+            )}
+            <button onClick={onClose} style={{ width:"100%", padding:12, border:"none", borderRadius:10, fontSize:14, fontFamily:"inherit", fontWeight:500, cursor:"pointer", background:"#f0ece3", color:"#888" }}>
               ✕ Close
             </button>
           </div>
