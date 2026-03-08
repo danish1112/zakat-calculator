@@ -387,96 +387,148 @@ const DonutChart = ({ data, emptyText }) => {
 };
 
 // ─── Print ────────────────────────────────────────────────────────────────────
-const buildPrintHTML = (data) => {
+// ─── Print / PDF ─────────────────────────────────────────────────────────────
+// Works on all platforms including iOS Safari and Android Chrome.
+// Strategy: inject a full-page overlay into the CURRENT document, then call
+// window.print(). CSS @media print hides everything except the overlay.
+// On mobile "Print → Save as PDF" in the browser share sheet saves the PDF.
+const triggerPrint = (data) => {
   const { rows, totalAssets, totalLiabilities, net, nisab, meetsNisab, zakatDue, gp, sp } = data;
   const today = new Date().toLocaleDateString("en-IN", { day:"numeric", month:"long", year:"numeric" });
-  const assetRows  = rows.filter(r => r.s === "a").map(r => `<tr><td>${r.l}</td><td>${formatINR(r.v)}</td></tr>`).join("");
-  const liabRows   = rows.filter(r => r.s === "l").map(r => `<tr><td>${r.l}</td><td>${formatINR(r.v)}</td></tr>`).join("");
-  const zColor     = meetsNisab ? "#1a6e2a" : "#999";
+  const assetRows = rows.filter(r => r.s === "a").map(r =>
+    `<tr><td>${r.l}</td><td>${formatINR(r.v)}</td></tr>`).join("");
+  const liabRows  = rows.filter(r => r.s === "l").map(r =>
+    `<tr><td>${r.l}</td><td>${formatINR(r.v)}</td></tr>`).join("");
+  const zColor     = meetsNisab ? "#1a6e2a" : "#888";
   const zBorder    = meetsNisab ? "#5cb86a" : "#e07c7c";
   const zBg        = meetsNisab ? "#f0faf2" : "#fdf5f5";
   const zStatusClr = meetsNisab ? "#2a8a3a" : "#c05050";
-  return `<!DOCTYPE html>
-<html><head><meta charset="utf-8"/>
-<title>Zakat Summary ${today}</title>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Outfit:wght@300;400;600&display=swap');
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Outfit',sans-serif;color:#1a1a1a;background:#fff;padding:40px 48px;max-width:660px;margin:0 auto}
-.logo{text-align:center;margin-bottom:24px;padding-bottom:20px;border-bottom:2px solid #c8a96e}
-.arabic{font-family:'Amiri',serif;font-size:28px;color:#c8a96e;display:block;margin-bottom:4px}
-h1{font-size:22px;font-weight:600;color:#1a1a1a}
-.date{color:#aaa;font-size:12px;margin-top:4px}
-.sec{font-size:9.5px;text-transform:uppercase;letter-spacing:.12em;color:#c8a96e;font-weight:700;margin:22px 0 7px;border-bottom:1px solid #ede0c8;padding-bottom:4px}
-table{width:100%;border-collapse:collapse}
-tr{border-bottom:1px solid #f2ece0}
-td{padding:7px 3px;font-size:13px}
-td:last-child{text-align:right;color:#7a5a20;font-weight:500}
-.sbox{background:#faf7f0;border:1px solid #e8ddc0;border-radius:10px;padding:16px 18px;margin-top:22px}
-.sr{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#666;border-bottom:1px solid #ede8d8}
-.sr:last-child{border-bottom:none}
-.sr.bold{color:#1a1a1a;font-weight:700;font-size:14px;padding-top:9px;margin-top:2px}
-.zbox{margin-top:22px;border:2px solid ${zBorder};border-radius:12px;padding:20px;text-align:center;background:${zBg}}
-.zlabel{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#c8a96e;margin-bottom:6px;font-weight:600}
-.zamt{font-size:34px;font-weight:700;color:${zColor};font-family:'Outfit',sans-serif}
-.zstatus{font-size:12px;color:${zStatusClr};margin-top:6px}
-.actions{display:flex;gap:10px;margin-top:26px;justify-content:center}
-.btn{padding:10px 26px;border:none;border-radius:8px;font-size:14px;font-family:'Outfit',sans-serif;font-weight:600;cursor:pointer}
-.btn-print{background:#1a6e2a;color:#fff}
-.btn-close{background:#f0ece3;color:#555}
-.foot{margin-top:20px;font-size:10px;color:#ccc;text-align:center;line-height:1.8}
-@media print{.actions{display:none!important}.foot{color:#aaa}}
-</style></head>
-<body>
-<div class="logo">
-  <span class="arabic">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْم</span>
-  <h1>Zakat Calculation Summary</h1>
-  <p class="date">Prepared on ${today}</p>
-</div>
 
-${assetRows ? `<div class="sec">Assets</div><table>${assetRows}</table>` : ""}
-${liabRows  ? `<div class="sec">Liabilities</div><table>${liabRows}</table>` : ""}
+  // Remove any existing overlay
+  const prev = document.getElementById("__zakat_print_overlay");
+  if (prev) prev.remove();
 
-<div class="sbox">
-  <div class="sr"><span>Total Assets</span><span>${formatINR(totalAssets)}</span></div>
-  <div class="sr"><span>Total Liabilities</span><span>− ${formatINR(totalLiabilities)}</span></div>
-  <div class="sr bold"><span>Net Zakatable Wealth</span><span>${formatINR(net)}</span></div>
-  <div class="sr" style="padding-top:8px;color:#999;font-size:12px"><span>Nisab threshold (Silver 595g @ ₹${sp}/g)</span><span>${formatINR(nisab)}</span></div>
-</div>
+  const overlay = document.createElement("div");
+  overlay.id = "__zakat_print_overlay";
+  overlay.innerHTML = `
+    <style>
+      #__zakat_print_overlay {
+        position: fixed; inset: 0; z-index: 99999;
+        background: #fff; overflow-y: auto;
+        font-family: 'Outfit', 'Segoe UI', sans-serif;
+        color: #1a1a1a;
+        -webkit-overflow-scrolling: touch;
+      }
+      #__zakat_print_overlay .p-inner {
+        max-width: 600px; margin: 0 auto; padding: 32px 28px 48px;
+      }
+      #__zakat_print_overlay .p-logo {
+        text-align: center; border-bottom: 2px solid #c8a96e;
+        padding-bottom: 18px; margin-bottom: 22px;
+      }
+      #__zakat_print_overlay .p-arabic {
+        font-family: 'Amiri', 'Arial', serif; font-size: 24px;
+        color: #c8a96e; display: block; margin-bottom: 4px;
+      }
+      #__zakat_print_overlay h1 { font-size: 20px; font-weight: 600; }
+      #__zakat_print_overlay .p-date { color: #aaa; font-size: 12px; margin-top: 3px; }
+      #__zakat_print_overlay .p-sec {
+        font-size: 9px; text-transform: uppercase; letter-spacing: .12em;
+        color: #c8a96e; font-weight: 700; margin: 20px 0 6px;
+        border-bottom: 1px solid #ede0c8; padding-bottom: 3px;
+      }
+      #__zakat_print_overlay table { width: 100%; border-collapse: collapse; }
+      #__zakat_print_overlay tr { border-bottom: 1px solid #f2ece0; }
+      #__zakat_print_overlay td { padding: 7px 3px; font-size: 13px; }
+      #__zakat_print_overlay td:last-child { text-align: right; color: #7a5a20; font-weight: 500; }
+      #__zakat_print_overlay .p-sbox {
+        background: #faf7f0; border: 1px solid #e8ddc0;
+        border-radius: 10px; padding: 14px 16px; margin-top: 20px;
+      }
+      #__zakat_print_overlay .p-sr {
+        display: flex; justify-content: space-between;
+        padding: 5px 0; font-size: 13px; color: #666;
+        border-bottom: 1px solid #ede8d8;
+      }
+      #__zakat_print_overlay .p-sr:last-child { border-bottom: none; }
+      #__zakat_print_overlay .p-sr.bold {
+        color: #1a1a1a; font-weight: 700; font-size: 14px; padding-top: 8px;
+      }
+      #__zakat_print_overlay .p-zbox {
+        margin-top: 20px; border: 2px solid ${zBorder};
+        border-radius: 12px; padding: 18px; text-align: center; background: ${zBg};
+      }
+      #__zakat_print_overlay .p-zlabel {
+        font-size: 9px; letter-spacing: .15em; text-transform: uppercase;
+        color: #c8a96e; margin-bottom: 6px; font-weight: 600;
+      }
+      #__zakat_print_overlay .p-zamt {
+        font-size: 32px; font-weight: 700; color: ${zColor};
+      }
+      #__zakat_print_overlay .p-zstatus {
+        font-size: 12px; color: ${zStatusClr}; margin-top: 5px;
+      }
+      #__zakat_print_overlay .p-actions {
+        display: flex; gap: 10px; margin-top: 24px;
+      }
+      #__zakat_print_overlay .p-btn {
+        flex: 1; padding: 13px; border: none; border-radius: 10px;
+        font-size: 15px; font-family: inherit; font-weight: 600; cursor: pointer;
+      }
+      #__zakat_print_overlay .p-btn-print { background: #1a6e2a; color: #fff; }
+      #__zakat_print_overlay .p-btn-close { background: #f0ece3; color: #555; }
+      #__zakat_print_overlay .p-foot {
+        margin-top: 18px; font-size: 10px; color: #bbb;
+        text-align: center; line-height: 1.8;
+      }
+      /* When printing: hide the app, show only the overlay */
+      @media print {
+        body > *:not(#__zakat_print_overlay) { display: none !important; }
+        #__zakat_print_overlay {
+          position: static !important; overflow: visible !important;
+        }
+        #__zakat_print_overlay .p-actions { display: none !important; }
+      }
+    </style>
+    <div class="p-inner">
+      <div class="p-logo">
+        <span class="p-arabic">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْم</span>
+        <h1>Zakat Calculation Summary</h1>
+        <p class="p-date">Prepared on ${today}</p>
+      </div>
+      ${assetRows ? `<div class="p-sec">Assets</div><table>${assetRows}</table>` : ""}
+      ${liabRows  ? `<div class="p-sec">Liabilities</div><table>${liabRows}</table>`  : ""}
+      <div class="p-sbox">
+        <div class="p-sr"><span>Total Assets</span><span>${formatINR(totalAssets)}</span></div>
+        <div class="p-sr"><span>Total Liabilities</span><span>− ${formatINR(totalLiabilities)}</span></div>
+        <div class="p-sr bold"><span>Net Zakatable Wealth</span><span>${formatINR(net)}</span></div>
+        <div class="p-sr" style="color:#aaa;font-size:12px">
+          <span>Nisab (Silver 595g × ₹${sp}/g)</span><span>${formatINR(nisab)}</span>
+        </div>
+      </div>
+      <div class="p-zbox">
+        <div class="p-zlabel">Zakat Due @ 2.5%</div>
+        <div class="p-zamt">${meetsNisab ? formatINR(zakatDue) : "Not Obligatory"}</div>
+        <div class="p-zstatus">${meetsNisab
+          ? "✓ Nisab threshold met — Zakat is obligatory"
+          : "✗ Wealth is below the Nisab threshold"}</div>
+      </div>
+      <div class="p-actions">
+        <button class="p-btn p-btn-print" id="__zakat_print_btn">🖨️ Print / Save as PDF</button>
+        <button class="p-btn p-btn-close" id="__zakat_close_btn">✕ Close</button>
+      </div>
+      <p class="p-foot">
+        Gold: ₹${gp}/gram &nbsp;·&nbsp; Silver: ₹${sp}/gram &nbsp;·&nbsp; ${today}<br/>
+        Made with ❤️ by Danish · Consult a qualified Islamic scholar for your situation.
+      </p>
+    </div>
+  `;
 
-<div class="zbox">
-  <div class="zlabel">Zakat Due @ 2.5%</div>
-  <div class="zamt">${meetsNisab ? formatINR(zakatDue) : "Not Obligatory"}</div>
-  <div class="zstatus">${meetsNisab ? "✓ Nisab threshold met — Zakat is obligatory" : "✗ Wealth is below the Nisab threshold"}</div>
-</div>
+  document.body.appendChild(overlay);
 
-<div class="actions">
-  <button class="btn btn-print" onclick="window.print()">🖨️ Print / Save as PDF</button>
-  <button class="btn btn-close" onclick="window.close()">✕ Close</button>
-</div>
-<p class="foot">
-  Gold: ₹${gp}/gram &nbsp;·&nbsp; Silver: ₹${sp}/gram &nbsp;·&nbsp; Rates as of ${today}<br/>
-  Made with ❤️ by Danish &nbsp;·&nbsp; Consult a qualified Islamic scholar for your specific situation.
-</p>
-</body></html>`;
+  document.getElementById("__zakat_print_btn").onclick = () => window.print();
+  document.getElementById("__zakat_close_btn").onclick = () => overlay.remove();
 };
-
-const triggerPrint = (data) => {
-  const html = buildPrintHTML(data);
-  // Blob URL approach — works in sandboxed iframes, no popup blocker issues
-  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement("a");
-  a.href     = url;
-  a.target   = "_blank";
-  a.rel      = "noopener noreferrer";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
-};
-
 // ─── Brand SVG Icons ──────────────────────────────────────────────────────────
 const BrandIcons = {
   whatsapp: (
